@@ -1,68 +1,116 @@
 package com.example;
 
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
-
-import java.util.concurrent.TimeUnit;
 
 public class KafkaProducerClient {
     public static void main(String[] args) throws Exception {
 
         Properties props = new Properties();
 
-        // ---------- 1. Connection ----------
-        props.put("bootstrap.servers", "localhost:9092,localhost:9093,localhost:9094"); // seed brokers used to discover
-                                                                                        // the full cluster
-        props.put("client.id", "payments-producer-1"); // logical name of this producer — appears in broker logs, JMX
-                                                       // metrics, and quota tracking
+        // ==================== 1. Connection ====================
 
-        // ---------- 2. Serialization ----------
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer"); // how the record key is
-                                                                                               // turned into bytes
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer"); // how the record value
-                                                                                                 // is turned into bytes
+        // - Comma-separated seed brokers used to discover full cluster metadata.
+        // - 2-3 entries is enough; client learns the rest at runtime.
+        props.put("bootstrap.servers", "localhost:9092,localhost:9093,localhost:9094");
 
-        // ---------- 3. Partitioning ----------
-        props.put("partitioner.class", "com.example.CustomPartitioner"); // custom class that decides which partition
-                                                                         // each record goes to
+        // - Logical name of this producer, surfaced in broker logs and JMX metrics.
+        // - Used by brokers to attribute traffic and apply per-client quotas.
+        props.put("client.id", "payments-producer-1");
 
-        // ---------- 4. Batching & throughput ----------
-        props.put("batch.size", 16384); // max bytes accumulated per partition batch before it's sent (16 KB)
-        props.put("linger.ms", 5); // extra wait to let more records join a batch — trades a bit of latency for
-                                   // throughput
-        props.put("buffer.memory", 33554432); // total memory the producer can use to buffer unsent records (32 MB)
-        props.put("max.block.ms", 60000); // how long send() will block when the buffer is full before throwing
-        props.put("compression.type", "snappy"); // compress each batch — options: none | gzip | snappy | lz4 | zstd
-        props.put("max.request.size", 1048576); // hard cap on the size of a single produce request (1 MB) — must be <
-                                                // broker's message.max.bytes
+        // ==================== 2. Serialization ====================
 
-        // ---------- 5. Reliability — acks, retries, idempotence ----------
-        props.put("acks", "all"); // wait for leader + all in-sync replicas to ack (strongest durability)
-        props.put("retries", Integer.MAX_VALUE); // retry transient send failures effectively forever (bounded by
-                                                 // delivery.timeout.ms)
-        props.put("retry.backoff.ms", 1000); // wait 1s between retry attempts for the same batch
-        props.put("enable.idempotence", "true"); // dedupe retries so at-least-once retries don't produce duplicates
-        props.put("max.in.flight.requests.per.connection", 5); // up to 5 unacked batches per connection — safe to keep
-                                                               // ordering under idempotence
+        // - Class that converts the record key object into bytes on the wire.
+        // - Must match what consumers deserialize with (String/Avro/Protobuf/JSON).
+        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
-        // ---------- 6. Timeouts ----------
-        props.put("request.timeout.ms", 30000); // max time to wait for a broker response to a single produce request
-        props.put("delivery.timeout.ms", 120000); // upper bound on total time from send() to success/failure (must be
-                                                  // >= linger.ms + request.timeout.ms)
+        // - Class that converts the record value object into bytes on the wire.
+        // - For typed payloads prefer schema-based formats (Avro/Protobuf) +
+        // compression.
+        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
 
-        // ---------- 7. Interceptors ----------
+        // ==================== 3. Partitioning ====================
+
+        // - Custom Partitioner class that picks a partition for each record.
+        // - Omit to use the default sticky partitioner; set only for key-based routing.
+        props.put("partitioner.class", "com.example.CustomPartitioner");
+
+        // ==================== 4. Batching & Throughput ====================
+
+        // - Max bytes accumulated per partition batch before it's sent (16 KB here).
+        // - Bigger = better throughput but more memory and higher per-record latency.
+        props.put("batch.size", 16384);
+
+        // - Extra wait to let more records join a batch before dispatch (ms).
+        // - 0 = send ASAP; a few ms often doubles throughput under load.
+        props.put("linger.ms", 5);
+
+        // - Total memory the producer can use to buffer unsent records (32 MB here).
+        // - When full, send() blocks up to max.block.ms; size for peak burst.
+        props.put("buffer.memory", 33554432);
+
+        // - Compression codec per batch: none | gzip | snappy | lz4 | zstd.
+        // - snappy/lz4 = fast; zstd = best ratio; broker must support the codec.
+        props.put("compression.type", "snappy");
+
+        // - Hard cap on the size of a single produce request in bytes (1 MB here).
+        // - Must be < broker's message.max.bytes; raise both together if needed.
+        props.put("max.request.size", 1048576);
+
+        // ==================== 5. Reliability ====================
+
+        // - Replica acks required before a send is considered successful: 0 | 1 | all.
+        // - "all" = strongest durability; pair with idempotence for exactly-once.
+        props.put("acks", "all");
+
+        // - Producer tags batches with PID + sequence so brokers drop duplicates.
+        // - Required for exactly-once; forces acks=all, retries>0, in-flight<=5.
+        props.put("enable.idempotence", "true");
+
+        // - Number of automatic retry attempts on transient errors.
+        // - Set MAX_VALUE and let delivery.timeout.ms bound total time.
+        props.put("retries", Integer.MAX_VALUE);
+
+        // - Wait between consecutive retry attempts for the same batch (ms).
+        // - Too low = broker flood on outage; 1s is a safe default.
+        props.put("retry.backoff.ms", 1000);
+
+        // - Max unacknowledged batches per connection in flight at once.
+        // - With idempotence, up to 5 keeps ordering; without, only 1 does.
+        props.put("max.in.flight.requests.per.connection", 5);
+
+        // ==================== 6. Timeouts ====================
+
+        // - How long send() blocks when buffer is full or metadata missing.
+        // - Low = fail fast for latency-sensitive callers; high = background jobs.
+        props.put("max.block.ms", 60000);
+
+        // - Max time to wait for a broker response to a single produce request.
+        // - Should exceed broker replica.lag.time.max.ms to avoid spurious retries.
+        props.put("request.timeout.ms", 30000);
+
+        // - Upper bound on total time from send() to success/failure callback.
+        // - Must be >= linger.ms + request.timeout.ms; this is the SLA callers see.
+        props.put("delivery.timeout.ms", 120000);
+
+        // ==================== 7. Interceptors ====================
+
+        // - Comma-separated ProducerInterceptor classes hooked into send + ack.
+        // - Cross-cutting concerns (audit, tracing, metrics) without touching business
+        // code.
         // props.put("interceptor.classes", "com.example.LoggingProducerInterceptor");
-        // // cross-cutting hooks — run on every send() and every ack/error (audit,
-        // tracing, metrics)
 
-        KafkaProducer<String, String> producer = new KafkaProducer<>(props); // create a Kafka producer
+        // create a Kafka producer
+        KafkaProducer<String, String> producer = new KafkaProducer<>(props);
 
         for (int i = 0; i < 100; i++) {
             // send messages to a Kafka topic
             String topic = "transactions";
-            int partition = 0; // specify the partition to send the message to
+            // specify the partition to send the message to
+            int partition = 0;
 
             // generate 1kb size message, no key
             String value = "This is a sample message of size 1KB. ".repeat(64); // 64 * 16 bytes = 1024 bytes = 1KB
@@ -75,7 +123,8 @@ public class KafkaProducerClient {
                             + metadata.partition() + ", offset: " + metadata.offset());
                 }
             });
-            TimeUnit.MILLISECONDS.sleep(1000); // sleep for 1 seconds before sending the next message
+            // sleep for 1 seconds before sending the next message
+            TimeUnit.MILLISECONDS.sleep(1000);
         }
         producer.close();
     }
