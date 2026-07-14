@@ -40,3 +40,6 @@ Thumbs.db
 # Env / secrets
 .env
 *.local
+
+
+kafka-lab/
