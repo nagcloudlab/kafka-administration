@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kafka Topic Configs — Property Reference for Admins</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; background: #fafbfc; color: #1f2328;
+               font-family: -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+               -webkit-font-smoothing: antialiased; }
+
+  .slide { display: none; height: 100vh; padding: 5vh 6vw;
+           flex-direction: column; justify-content: center; overflow-y: auto; }
+  .slide.active { display: flex; }
+  .kicker { font-size: 0.9vw; color: #8250df; font-weight: 700; letter-spacing: 0.2em;
+            text-transform: uppercase; margin-bottom: 1vh; }
+  h1 { font-size: 3.4vw; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em;
+       color: #0d1117; margin-bottom: 2vh; }
+  h2 { font-size: 2.6vw; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em;
+       color: #0d1117; margin-bottom: 1.5vh; }
+  h2.prop { font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+            color: #6639ba; font-size: 2.4vw; word-break: break-all; }
+  h3 { font-size: 1.15vw; font-weight: 700; color: #656d76;
+       text-transform: uppercase; letter-spacing: 0.12em; margin: 1.8vh 0 0.8vh 0; }
+  p  { font-size: 1.3vw; line-height: 1.55; color: #24292f; margin-bottom: 0.8vh; }
+  .lead { font-size: 1.6vw; line-height: 1.5; color: #656d76; margin-bottom: 2vh; }
+  .muted { color: #656d76; }
+
+  ul { list-style: none; font-size: 1.25vw; line-height: 1.75; }
+  ul li { padding-left: 1.3em; text-indent: -1.3em; margin-bottom: 0.4vh; }
+  ul li::before { content: "▸  "; color: #0969da; font-weight: bold; }
+  ul.check li::before { content: "✓  "; color: #1a7f37; }
+  ul.x li::before { content: "✕  "; color: #cf222e; }
+  ul.plain li { padding-left: 0; text-indent: 0; }
+  ul.plain li::before { content: ""; }
+
+  code { font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+         background: #eaeef2; padding: 0.15em 0.5em; border-radius: 4px;
+         color: #8250df; font-size: 0.9em; }
+  pre  { font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+         background: #f6f8fa; border: 1px solid #d0d7de;
+         padding: 1.3vh 1.4vw; border-radius: 8px;
+         font-size: 1vw; line-height: 1.55; margin: 1vh 0; overflow-x: auto;
+         color: #24292f; }
+
+  .row { display: flex; gap: 1.5vw; margin: 1.2vh 0; }
+  .card { flex: 1; background: white; border: 1px solid #d0d7de;
+          border-radius: 12px; padding: 1.5vh 1.4vw;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h3 { color: #0969da; margin-top: 0; font-size: 1.1vw; }
+  .card ul { font-size: 1.05vw; line-height: 1.6; }
+
+  /* callouts */
+  .callout { padding: 1.4vh 1.8vw; border-radius: 8px; margin: 1vh 0;
+             font-size: 1.15vw; line-height: 1.55; }
+  .callout.warn   { background: #fff8c5; border-left: 5px solid #bf8700; color: #4d3800; }
+  .callout.danger { background: #ffebe9; border-left: 5px solid #cf222e; color: #6f2822; }
+  .callout.info   { background: #ddf4ff; border-left: 5px solid #0969da; color: #002d5c; }
+  .callout.good   { background: #dcfce7; border-left: 5px solid #1a7f37; color: #14532d; }
+  .callout .label { display: block; font-weight: 700; font-size: 0.85vw;
+                    text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 0.4vh; }
+
+  .takeaway { text-align: center; padding: 4vh 4vw; margin: 2vh 0;
+              background: linear-gradient(135deg, #0969da 0%, #6639ba 100%);
+              color: white; border-radius: 16px;
+              font-size: 1.9vw; font-weight: 600; line-height: 1.4;
+              box-shadow: 0 4px 16px rgba(9,105,218,0.2); }
+  .takeaway em { color: #ffd166; font-style: normal; }
+
+  table { border-collapse: collapse; width: 100%; margin: 1.2vh 0;
+          font-size: 1.05vw; background: white; border-radius: 8px; overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  th { text-align: left; padding: 0.9vh 1.1vw; background: #f6f8fa;
+       color: #24292f; font-weight: 600; border-bottom: 2px solid #d0d7de; }
+  td { padding: 0.8vh 1.1vw; border-bottom: 1px solid #eaeef2; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  /* badges (default value + type) */
+  .badges { display: flex; flex-wrap: wrap; gap: 0.6vw; margin: 0.8vh 0 1.5vh 0; }
+  .badge { display: inline-flex; align-items: center; padding: 0.5vh 1vw;
+           border-radius: 999px; font-size: 0.9vw; font-weight: 600;
+           background: #eaeef2; color: #24292f;
+           font-family: "JetBrains Mono", monospace; }
+  .badge.def   { background: #ddf4ff; color: #0969da; border: 1px solid #b6d7ff; }
+  .badge.dyn   { background: #dcfce7; color: #14532d; border: 1px solid #86efac; }
+  .badge.stat  { background: #fee2e2; color: #7f1d1d; border: 1px solid #fca5a5; }
+  .badge.new   { background: #f0e7ff; color: #6639ba; border: 1px solid #d4baff; }
+  .badge.legacy { background: #f6f8fa; color: #656d76; border: 1px solid #d0d7de; text-decoration: line-through; }
+
+  .cover { justify-content: center; text-align: left; }
+  .cover h1 { font-size: 4.5vw; }
+  .cover .subtitle { font-size: 1.9vw; color: #0969da; margin-bottom: 3vh; font-weight: 400; }
+  .cover .meta { font-size: 1.05vw; color: #656d76; line-height: 2; }
+
+  .section { justify-content: center; text-align: center;
+             background: linear-gradient(135deg, #0969da 0%, #6639ba 100%); color: white; }
+  .section .kicker { color: rgba(255,255,255,0.75); font-size: 1vw; }
+  .section h1 { color: white; font-size: 4vw; }
+  .section .subtitle { font-size: 1.5vw; color: rgba(255,255,255,0.9); margin-top: 1.5vh; }
+  .section .count { font-size: 1vw; color: rgba(255,255,255,0.7); margin-top: 2vh;
+                     letter-spacing: 0.2em; text-transform: uppercase; }
+
+  .footer { position: fixed; bottom: 1.2vh; right: 1.8vw;
+            color: #8b949e; font-size: 0.9vw; font-family: monospace; }
+  .progress { position: fixed; bottom: 0; left: 0; height: 3px;
+              background: linear-gradient(90deg, #0969da, #8250df);
+              transition: width 0.25s; }
+
+  /* ==== overview mode (press O) ==== */
+  body.overview { overflow-y: auto !important; padding: 2vh 1.5vw 6vh 1.5vw; }
+  body.overview .slide { display: flex !important; position: relative;
+    width: 30vw; height: 17vw; float: left; margin: 0.6vh 0.6vw; padding: 1.2vh 1vw;
+    border: 2px solid #d0d7de; border-radius: 8px; cursor: pointer;
+    overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    justify-content: flex-start; }
+  body.overview .slide:hover { border-color: #8250df; transform: scale(1.02); }
+  body.overview .slide.active { border-color: #0969da; box-shadow: 0 0 0 3px #b6d7ff; }
+  body.overview .slide h1 { font-size: 1.3vw; margin-bottom: 0.4vh; }
+  body.overview .slide h2 { font-size: 1.1vw; margin-bottom: 0.4vh; }
+  body.overview .slide h3, body.overview .slide p, body.overview .slide li,
+  body.overview .slide table, body.overview .slide pre, body.overview .slide .callout { font-size: 0.7vw !important; }
+  body.overview .slide .kicker { font-size: 0.55vw; }
+  body.overview .slide .badges .badge { font-size: 0.55vw; padding: 0.2vh 0.5vw; }
+  body.overview .slide::after { content: attr(data-num);
+    position: absolute; top: 3px; right: 5px; background: #6639ba; color: white;
+    font-family: monospace; padding: 1px 6px; border-radius: 3px;
+    font-size: 0.75vw; z-index: 10; font-weight: 700; }
+  body.overview .footer, body.overview .progress { display: none; }
+
+  /* ==== help overlay (press ?) ==== */
+  #help { display: none; position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); background: white; padding: 3vh 3vw;
+    border-radius: 12px; box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+    z-index: 100; min-width: 34vw; max-width: 45vw; }
+  #help.on { display: block; }
+  #help h3 { color: #0969da; font-size: 1.4vw; margin-bottom: 1.5vh; }
+  #help table { font-size: 1vw; }
+  #help td { padding: 0.6vh 1vw; }
+  #help kbd { background: #eaeef2; padding: 2px 8px; border-radius: 4px;
+    font-family: "JetBrains Mono", monospace; font-size: 0.9em;
+    border: 1px solid #d0d7de; color: #24292f; margin-right: 4px; }
+  #help .close { margin-top: 1.5vh; text-align: center; color: #656d76; font-size: 0.9vw; }
+
+  /* ==== print (Ctrl+P → PDF handout) ==== */
+  @media print {
+    html, body { overflow: visible !important; height: auto !important;
+      background: white !important; }
+    .slide { display: block !important; page-break-after: always;
+      height: auto !important; min-height: 90vh; padding: 3vh 3vw !important;
+      box-shadow: none !important; }
+    .footer, .progress, #help { display: none !important; }
+    .section { background: white !important; color: #0d1117 !important; }
+    .section h1, .section .kicker, .section .subtitle { color: #0d1117 !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ================================================== COVER -->
+<section class="slide active cover">
+  <div class="kicker">Companion deck</div>
+  <h1>Topic Config Properties</h1>
+  <div class="subtitle">The knobs, one by one — with defaults, trade-offs &amp; commands</div>
+  <div class="meta">
+    Pair with · <strong>slides.html</strong> (Deep-Dive)<br>
+    Audience · Kafka Admins, Platform, DevOps, SRE<br>
+    Template · Default · What · When to change · Trade-off · Example
+  </div>
+</section>
+
+<section class="slide">
+  <div class="kicker">How to read this deck</div>
+  <h2>The five things you need per property</h2>
+  <ol style="font-size:1.4vw;line-height:2">
+    <li><strong>Default</strong> — what you get if you don't set it</li>
+    <li><strong>Type</strong> — dynamic or restart-required</li>
+    <li><strong>What it does</strong> — the mechanism in 1-2 lines</li>
+    <li><strong>When to change</strong> — the real admin trigger</li>
+    <li><strong>Trade-off</strong> — what breaks if you get it wrong</li>
+  </ol>
+  <div class="callout info">
+    <span class="label">Notation</span>
+    Badges next to each property name: <span class="badge def">default: X</span>
+    <span class="badge dyn">dynamic</span> <span class="badge stat">restart</span> <span class="badge new">newer</span>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="kicker">Commands you'll reuse</div>
+  <h2>Inspect &amp; modify — the two commands</h2>
+  <h3>Inspect a topic's effective config (with source)</h3>
+  <pre>kafka-configs.sh --bootstrap-server $BS \
+  --entity-type topics --entity-name orders.events \
+  --describe --all</pre>
+  <h3>Set an override</h3>
+  <pre>kafka-configs.sh --bootstrap-server $BS \
+  --entity-type topics --entity-name orders.events \
+  --alter --add-config retention.ms=1209600000</pre>
+  <h3>Remove an override (revert to broker default)</h3>
+  <pre>kafka-configs.sh --bootstrap-server $BS \
+  --entity-type topics --entity-name orders.events \
+  --alter --delete-config retention.ms</pre>
+</section>
+
+<!-- ============================================================= CHAPTER 1: RETENTION & COMPACTION -->
+<section class="slide section">
+  <div class="kicker">Chapter 1</div>
+  <h1>Retention &amp; Compaction</h1>
+  <div class="subtitle">How data leaves your topic</div>
+  <div class="count">7 properties</div>
+</section>
+
+<section class="slide">
+  <div class="kicker">1.1 Cleanup policy</div>
+  <h2 class="prop">cleanup.policy</h2>
+  <div class="badges">
+    <span class="badge def">default: delete</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Selects how old data is removed: <code>delete</code>, <code>compact</code>, or <code>delete,compact</code></li>
+    <li>Determines whether the log cleaner runs on this topic</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    Event history / audit → <code>delete</code>. Current-state / changelog → <code>compact</code>. Bounded state with age cap → <code>delete,compact</code>.
+  </div>
+  <div class="callout danger">
+    <span class="label">Trap</span>
+    <code>compact</code> requires <strong>keys</strong> on every record. Null-key records are ignored by the cleaner and live forever.
+  </div>
+  <pre>--config cleanup.policy=compact</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">1.2 Time retention</div>
+  <h2 class="prop">retention.ms</h2>
+  <div class="badges">
+    <span class="badge def">default: 604800000 (7 d)</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>How long a rolled segment can exist before deletion (delete-policy only)</li>
+    <li>Measured from the segment's <strong>largest message timestamp</strong></li>
+    <li><code>-1</code> = keep forever</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    Longer for replay windows / compliance · shorter to bound disk cost.
+  </div>
+  <div class="callout warn">
+    <span class="label">Trade-off</span>
+    Retention only deletes <strong>rolled</strong> segments — the active segment is immune.
+    Data can outlive <code>retention.ms</code> by up to <code>segment.ms</code>.
+  </div>
+  <pre>--config retention.ms=1209600000    # 14 days</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">1.3 Size retention</div>
+  <h2 class="prop">retention.bytes</h2>
+  <div class="badges">
+    <span class="badge def">default: -1 (unlimited)</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Max bytes to retain <strong>per partition</strong> (not per topic!)</li>
+    <li>Oldest segments removed once total exceeds this</li>
+  </ul>
+  <div class="callout warn">
+    <span class="label">Per partition</span>
+    Actual topic disk ≈ <code>retention.bytes × partitions × RF</code>. A 6-partition topic with RF=3 and <code>retention.bytes=1GB</code> can use ~18 GB.
+  </div>
+  <div class="callout danger">
+    <span class="label">Trade-off</span>
+    High-volume bursts shorten the effective time window. Prefer time OR size — not both — for reasoning.
+  </div>
+  <pre>--config retention.bytes=10737418240    # 10 GB per partition</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">1.4 Tombstone retention</div>
+  <h2 class="prop">delete.retention.ms</h2>
+  <div class="badges">
+    <span class="badge def">default: 86400000 (24 h)</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>How long tombstones (key + null-value) remain visible in compacted topics</li>
+    <li>Gives downstream consumers time to see the deletion before the cleaner removes it</li>
+  </ul>
+  <div class="callout info">
+    Only relevant when <code>cleanup.policy=compact</code>.
+  </div>
+  <div class="callout danger">
+    <span class="label">Trade-off</span>
+    Consumers offline longer than this window <strong>never see the delete</strong> → rebuild wrong state.
+  </div>
+  <pre>--config delete.retention.ms=604800000    # 7 days (safer)</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">1.5 Compaction eligibility</div>
+  <h2 class="prop">min.cleanable.dirty.ratio</h2>
+  <div class="badges">
+    <span class="badge def">default: 0.5</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Cleaner ignores compacted partitions until dirty portion / total ≥ this ratio</li>
+    <li>Prevents the cleaner from running on every tiny change</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    Lower (e.g. <code>0.1</code>) → more aggressive cleaning, less duplicate history, more I/O.<br>
+    Higher (e.g. <code>0.75</code>) → cleaner runs less often, larger disk footprint.
+  </div>
+  <div class="callout warn">
+    <span class="label">Test</span>
+    Values below <code>0.01</code> cause continuous cleaner activity — often thrashing.
+  </div>
+  <pre>--config min.cleanable.dirty.ratio=0.1</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">1.6 Min compaction lag</div>
+  <h2 class="prop">min.compaction.lag.ms</h2>
+  <div class="badges">
+    <span class="badge def">default: 0</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Records younger than this are <strong>protected</strong> from compaction</li>
+    <li>Guarantees a minimum "recent history" window for consumers</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    Set when consumers need to see every intermediate value for a key for at least N seconds/minutes (e.g. CDC replay, debugging window).
+  </div>
+  <pre>--config min.compaction.lag.ms=3600000    # 1 h protected</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">1.7 Max compaction lag</div>
+  <h2 class="prop">max.compaction.lag.ms</h2>
+  <div class="badges">
+    <span class="badge def">default: Long.MAX_VALUE</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Forces compaction after this age even if dirty ratio hasn't been reached</li>
+    <li>Bounds the maximum "how stale can a duplicate be" delay</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    Set when compliance/GDPR requires "deleted keys must actually be gone within N days".
+  </div>
+  <div class="callout warn">
+    <span class="label">Interaction</span>
+    Overrides <code>min.cleanable.dirty.ratio</code> when triggered. Increases cleaner load.
+  </div>
+  <pre>--config max.compaction.lag.ms=2592000000    # 30 days</pre>
+</section>
+
+<!-- ============================================================= CHAPTER 2: SEGMENTS -->
+<section class="slide section">
+  <div class="kicker">Chapter 2</div>
+  <h1>Segments</h1>
+  <div class="subtitle">The physical unit of retention &amp; compaction</div>
+  <div class="count">4 properties</div>
+</section>
+
+<section class="slide">
+  <div class="kicker">2.1 Segment size</div>
+  <h2 class="prop">segment.bytes</h2>
+  <div class="badges">
+    <span class="badge def">default: 1073741824 (1 GB)</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Rolls the active segment when it reaches this size</li>
+    <li>Determines granularity of retention deletion &amp; compaction</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    <strong>Smaller</strong> (64–256 MB) → faster response to retention, more compaction opportunities, but more open files.<br>
+    <strong>Larger</strong> (1–4 GB) → default for busy topics — fewer segments, less overhead.
+  </div>
+  <div class="callout danger">
+    <span class="label">Trade-off</span>
+    Never below 16 MB in production. Small segments multiply open file handles &amp; index memory.
+  </div>
+  <pre>--config segment.bytes=268435456    # 256 MB</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">2.2 Segment age</div>
+  <h2 class="prop">segment.ms  &amp;  segment.jitter.ms</h2>
+  <div class="badges">
+    <span class="badge def">segment.ms default: 604800000 (7 d)</span>
+    <span class="badge def">jitter default: 0</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li><code>segment.ms</code> — rolls the segment after this age, even if size not reached</li>
+    <li><code>segment.jitter.ms</code> — random offset up to this value, to prevent every partition rolling at the same instant</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    Low-volume topics may never hit <code>segment.bytes</code> — set <code>segment.ms=86400000</code> (1 day) so retention can eventually delete.
+  </div>
+  <div class="callout warn">
+    <span class="label">Ops tip</span>
+    Add jitter (~10% of <code>segment.ms</code>) to prevent a "roll storm" on large clusters where thousands of partitions all roll simultaneously.
+  </div>
+  <pre>--config segment.ms=86400000
+--config segment.jitter.ms=3600000    # ±1h jitter</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">2.3 Index size</div>
+  <h2 class="prop">segment.index.bytes</h2>
+  <div class="badges">
+    <span class="badge def">default: 10485760 (10 MB)</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Max size of the offset index file per segment (pre-allocated)</li>
+    <li>Larger index = more index entries = faster seeks in big segments</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    Rarely tuned. Reduce (e.g. 1 MB) for clusters with many thousands of small partitions to save mmap memory.
+  </div>
+  <div class="callout warn">
+    <span class="label">Interaction</span>
+    Works with <code>index.interval.bytes</code> (broker-level, default 4 KB) which controls how sparse the index is.
+  </div>
+  <pre>--config segment.index.bytes=1048576    # 1 MB</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">2.4 File deletion delay</div>
+  <h2 class="prop">file.delete.delay.ms</h2>
+  <div class="badges">
+    <span class="badge def">default: 60000 (60 s)</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Time to wait after marking a segment file for deletion before actually removing it</li>
+    <li>Gives in-flight reads time to finish</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    Almost never. Increase if you see consumer errors like <code>Log file was deleted</code> during very slow reads.
+  </div>
+  <pre>--config file.delete.delay.ms=120000    # 2 min</pre>
+</section>
+
+<!-- ============================================================= CHAPTER 3: MESSAGES & SIZE -->
+<section class="slide section">
+  <div class="kicker">Chapter 3</div>
+  <h1>Messages &amp; Size</h1>
+  <div class="subtitle">What the topic will accept on the wire</div>
+  <div class="count">3 properties</div>
+</section>
+
+<section class="slide">
+  <div class="kicker">3.1 Max message size</div>
+  <h2 class="prop">max.message.bytes</h2>
+  <div class="badges">
+    <span class="badge def">default: 1048588 (~1 MB)</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Largest record <strong>batch</strong> the broker will accept for this topic</li>
+    <li>Overrides broker-level <code>message.max.bytes</code> for this topic</li>
+  </ul>
+  <div class="callout danger">
+    <span class="label">Five-layer handshake</span>
+    Producer <code>max.request.size</code>, broker <code>message.max.bytes</code>, topic <code>max.message.bytes</code>, broker <code>replica.fetch.max.bytes</code>, consumer <code>max.partition.fetch.bytes</code> — <strong>strictest wins</strong>.
+  </div>
+  <div class="callout warn">
+    <span class="label">Rule</span>
+    Never let this exceed the broker's <code>replica.fetch.max.bytes</code>. Replication will silently stall.
+  </div>
+  <pre>--config max.message.bytes=4194304    # 4 MB</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">3.2 Compression</div>
+  <h2 class="prop">compression.type</h2>
+  <div class="badges">
+    <span class="badge def">default: producer</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li><code>producer</code> — preserve whatever codec the producer chose (default, most flexible)</li>
+    <li><code>none</code>, <code>gzip</code>, <code>snappy</code>, <code>lz4</code>, <code>zstd</code> — force this codec, recompressing if producer used a different one</li>
+    <li><code>uncompressed</code> — force plain, even if producer sent compressed</li>
+  </ul>
+  <div class="callout warn">
+    <span class="label">Trade-off</span>
+    Forcing recompression consumes broker CPU. Prefer <code>producer</code> unless you have a specific need to standardise (e.g. compliance, cost).
+  </div>
+  <pre>--config compression.type=zstd    # smaller on disk, more CPU</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">3.3 Down-conversion</div>
+  <h2 class="prop">message.downconversion.enable</h2>
+  <div class="badges">
+    <span class="badge def">default: true</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Broker down-converts message format for old consumers that don't support the current format</li>
+    <li>Very old clients (pre-0.11) may still request the old format</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    Set to <code>false</code> once all clients are modern (Kafka 2.0+). Saves broker CPU &amp; memory when old fetches would trigger conversion.
+  </div>
+  <div class="callout danger">
+    <span class="label">Verify first</span>
+    Old clients will get <code>UNSUPPORTED_VERSION</code> errors. Confirm zero legacy clients before disabling.
+  </div>
+  <pre>--config message.downconversion.enable=false</pre>
+</section>
+
+<!-- ============================================================= CHAPTER 4: TIMESTAMPS -->
+<section class="slide section">
+  <div class="kicker">Chapter 4</div>
+  <h1>Timestamps</h1>
+  <div class="subtitle">Retention math depends on these</div>
+  <div class="count">2 properties</div>
+</section>
+
+<section class="slide">
+  <div class="kicker">4.1 Timestamp source</div>
+  <h2 class="prop">message.timestamp.type</h2>
+  <div class="badges">
+    <span class="badge def">default: CreateTime</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li><code>CreateTime</code> — use the timestamp the producer supplied (event time)</li>
+    <li><code>LogAppendTime</code> — broker overwrites with wall-clock at append time</li>
+  </ul>
+  <h3>When to change</h3>
+  <div class="callout info">
+    Use <code>LogAppendTime</code> when producers can't be trusted to send monotonically-increasing timestamps (embedded devices, backfill jobs).
+  </div>
+  <div class="callout warn">
+    <span class="label">Impact</span>
+    <code>retention.ms</code> uses the segment's largest timestamp. If you switch to <code>LogAppendTime</code>, retention becomes "seconds since data landed" not "seconds since event".
+  </div>
+  <pre>--config message.timestamp.type=LogAppendTime</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">4.2 Timestamp bounds</div>
+  <h2 class="prop">message.timestamp.before.max.ms  &amp;  after.max.ms</h2>
+  <div class="badges">
+    <span class="badge def">default: Long.MAX_VALUE</span>
+    <span class="badge dyn">dynamic</span>
+    <span class="badge new">Kafka 3.0+</span>
+  </div>
+  <p style="font-size:1.1vw;color:#656d76">Replaces the older <code style="font-size:0.9em">message.timestamp.difference.max.ms</code> single-value setting.</p>
+  <h3>What they do</h3>
+  <ul>
+    <li>Reject records whose timestamp is more than N ms in the past (<code>before.max.ms</code>) or future (<code>after.max.ms</code>) relative to broker wall-clock</li>
+    <li>Only enforced when <code>message.timestamp.type=CreateTime</code></li>
+  </ul>
+  <div class="callout info">
+    Protects retention math from producers with wildly wrong clocks. A rogue timestamp 100 years in the future would make everything after it un-deletable.
+  </div>
+  <pre>--config message.timestamp.before.max.ms=3600000    # reject > 1h old
+--config message.timestamp.after.max.ms=300000      # reject > 5min future</pre>
+</section>
+
+<!-- ============================================================= CHAPTER 5: DURABILITY -->
+<section class="slide section">
+  <div class="kicker">Chapter 5</div>
+  <h1>Durability</h1>
+  <div class="subtitle">The write-side safety net</div>
+  <div class="count">2 properties</div>
+</section>
+
+<section class="slide">
+  <div class="kicker">5.1 Min in-sync replicas</div>
+  <h2 class="prop">min.insync.replicas</h2>
+  <div class="badges">
+    <span class="badge def">default: 1</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Minimum ISR count required to accept an <code>acks=all</code> write</li>
+    <li>If ISR drops below this, producer gets <code>NotEnoughReplicasException</code></li>
+  </ul>
+  <div class="callout danger">
+    <span class="label">Only with acks=all</span>
+    Ignored when producer uses <code>acks=0</code> or <code>acks=1</code>. Setting min.ISR alone doesn't protect writes.
+  </div>
+  <div class="callout good">
+    <span class="label">Safety formula</span>
+    RF ≥ min.ISR + F → tolerates F broker failures without producer errors.<br>
+    Recommended: <strong>RF=3 · min.ISR=2 · acks=all</strong>.
+  </div>
+  <pre>--config min.insync.replicas=2</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">5.2 Unclean leader election</div>
+  <h2 class="prop">unclean.leader.election.enable</h2>
+  <div class="badges">
+    <span class="badge def">default: false (since 0.11)</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>When ISR is empty, can Kafka elect an <strong>out-of-sync</strong> replica as leader?</li>
+    <li><code>false</code> → partition stays offline until an ISR member returns (durability &gt; availability)</li>
+    <li><code>true</code> → elect any surviving replica (availability &gt; durability, with <strong>silent data loss</strong>)</li>
+  </ul>
+  <div class="callout danger">
+    <span class="label">Never casually</span>
+    Only enable per-topic, for workloads where availability strictly outranks a possible data-loss event (metrics, logs, cache warm-up streams).
+  </div>
+  <pre>--config unclean.leader.election.enable=true    # metrics-tier only</pre>
+</section>
+
+<!-- ============================================================= CHAPTER 6: REPLICATION THROTTLING -->
+<section class="slide section">
+  <div class="kicker">Chapter 6</div>
+  <h1>Replication Throttling</h1>
+  <div class="subtitle">Live during a reassignment or planned catch-up</div>
+  <div class="count">2 paired properties</div>
+</section>
+
+<section class="slide">
+  <div class="kicker">6.1 Throttled replica lists</div>
+  <h2 class="prop">follower / leader .replication.throttled.replicas</h2>
+  <div class="badges">
+    <span class="badge def">default: (empty)</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What they do</h3>
+  <ul>
+    <li>Marks specific <code>partition:broker</code> replicas as throttled during replication</li>
+    <li>Actual rate cap set by broker-level <code>follower.replication.throttled.rate</code> / <code>leader.replication.throttled.rate</code></li>
+    <li>Set automatically by <code>kafka-reassign-partitions --execute --throttle N</code></li>
+  </ul>
+  <div class="callout warn">
+    <span class="label">Cleanup matters</span>
+    Skipping <code>kafka-reassign-partitions --verify</code> means these configs stay set forever — chronically slow followers, mysterious URP.
+  </div>
+  <pre># format: "partitionId:brokerId,partitionId:brokerId,..." or "*"
+--add-config follower.replication.throttled.replicas=0:102,1:103</pre>
+</section>
+
+<!-- ============================================================= CHAPTER 7: FLUSH -->
+<section class="slide section">
+  <div class="kicker">Chapter 7</div>
+  <h1>Flush &amp; Preallocation</h1>
+  <div class="subtitle">Rarely tuned — know they exist</div>
+  <div class="count">3 properties</div>
+</section>
+
+<section class="slide">
+  <div class="kicker">7.1 Flush controls</div>
+  <h2 class="prop">flush.messages  ·  flush.ms  ·  preallocate</h2>
+  <div class="badges">
+    <span class="badge def">flush.messages: Long.MAX_VALUE</span>
+    <span class="badge def">flush.ms: Long.MAX_VALUE</span>
+    <span class="badge def">preallocate: false</span>
+    <span class="badge dyn">dynamic</span>
+  </div>
+  <h3>What they do</h3>
+  <ul>
+    <li><code>flush.messages</code> — force fsync after every N messages</li>
+    <li><code>flush.ms</code> — force fsync every N ms</li>
+    <li><code>preallocate</code> — allocate segment file size up-front (Windows only, rarely needed)</li>
+  </ul>
+  <div class="callout danger">
+    <span class="label">Trap: don't tune these</span>
+    Kafka's durability is designed around <strong>replication</strong>, not fsync. Setting <code>flush.messages=1</code> for "safety" kills throughput and is redundant with <code>acks=all + min.ISR</code>.
+  </div>
+  <div class="callout info">
+    Use replication + <code>acks=all</code> for durability. Leave flush at defaults on Linux.
+  </div>
+</section>
+
+<!-- ============================================================= CHAPTER 8: TIERED STORAGE -->
+<section class="slide section">
+  <div class="kicker">Chapter 8</div>
+  <h1>Tiered Storage (KIP-405)</h1>
+  <div class="subtitle">Kafka 3.6+ · Early Access</div>
+  <div class="count">3 properties</div>
+</section>
+
+<section class="slide">
+  <div class="kicker">8.1 Enable tiering</div>
+  <h2 class="prop">remote.storage.enable</h2>
+  <div class="badges">
+    <span class="badge def">default: false</span>
+    <span class="badge dyn">dynamic</span>
+    <span class="badge new">Kafka 3.6+</span>
+  </div>
+  <h3>What it does</h3>
+  <ul>
+    <li>Enables offload of rolled segments to remote storage (S3, GCS, Azure Blob, ...)</li>
+    <li>Requires <code>remote.log.storage.system.enable=true</code> at broker level + a plugin</li>
+    <li>Compacted topics can't be tiered (yet)</li>
+  </ul>
+  <div class="callout danger">
+    <span class="label">One-way</span>
+    Cannot be disabled once data is on remote — you'd need to migrate to a new topic.
+  </div>
+  <pre>--config remote.storage.enable=true</pre>
+</section>
+
+<section class="slide">
+  <div class="kicker">8.2 Local hot tier</div>
+  <h2 class="prop">local.retention.ms  ·  local.retention.bytes</h2>
+  <div class="badges">
+    <span class="badge def">default: -2 (same as retention)</span>
+    <span class="badge dyn">dynamic</span>
+    <span class="badge new">Kafka 3.6+</span>
+  </div>
+  <h3>What they do</h3>
+  <ul>
+    <li>How much data to keep on <strong>local broker disk</strong> before offloading</li>
+    <li><code>retention.ms</code> / <code>retention.bytes</code> still control total (local + remote)</li>
+    <li>Only meaningful when <code>remote.storage.enable=true</code></li>
+  </ul>
+  <div class="callout info">
+    Set <code>local.retention.ms</code> to your consumer's typical tail-lag SLO. Real-time consumers get fast local reads; archive replays hit slower remote fetch.
+  </div>
+  <pre>--config local.retention.ms=3600000     # 1 h hot
+--config retention.ms=2592000000        # 30 d total</pre>
+</section>
+
+<!-- ============================================================= WRAP UP -->
+<section class="slide section">
+  <div class="kicker">Wrap-up</div>
+  <h1>Reference</h1>
+  <div class="subtitle">Cheat sheets &amp; anti-patterns</div>
+</section>
+
+<section class="slide">
+  <div class="kicker">The 10 you'll actually set</div>
+  <h2>Production topic config template</h2>
+  <table>
+    <tr><th>Property</th><th>Typical value</th><th>Why</th></tr>
+    <tr><td><code>cleanup.policy</code></td><td>delete</td><td>Event history default</td></tr>
+    <tr><td><code>retention.ms</code></td><td>604800000 (7 d)</td><td>Business-driven</td></tr>
+    <tr><td><code>segment.ms</code></td><td>86400000 (1 d)</td><td>Low-volume topics need age-based roll</td></tr>
+    <tr><td><code>segment.bytes</code></td><td>268435456 (256 MB)</td><td>Faster retention response</td></tr>
+    <tr><td><code>min.insync.replicas</code></td><td>2</td><td>Durability with RF=3</td></tr>
+    <tr><td><code>unclean.leader.election.enable</code></td><td>false</td><td>Prevent silent data loss</td></tr>
+    <tr><td><code>max.message.bytes</code></td><td>~1 MB (default)</td><td>Match cluster-wide policy</td></tr>
+    <tr><td><code>compression.type</code></td><td>producer</td><td>Trust the producer's choice</td></tr>
+    <tr><td><code>message.timestamp.type</code></td><td>CreateTime</td><td>Retention on event time</td></tr>
+    <tr><td><code>message.timestamp.before.max.ms</code></td><td>3600000 (1 h)</td><td>Guard against clock skew</td></tr>
+  </table>
+</section>
+
+<section class="slide">
+  <div class="kicker">The 5 you shouldn't touch</div>
+  <h2>Leave-alone list</h2>
+  <ul class="x">
+    <li><code>flush.messages</code> · <code>flush.ms</code> — replication IS your durability, not fsync</li>
+    <li><code>preallocate</code> — Windows-only workaround, irrelevant on Linux</li>
+    <li><code>segment.index.bytes</code> — 10 MB default is fine unless you have &gt; 10k partitions</li>
+    <li><code>file.delete.delay.ms</code> — 60 s default fine unless very slow consumers</li>
+    <li><code>message.downconversion.enable</code> — leave <code>true</code> unless you've verified zero legacy clients</li>
+  </ul>
+  <div class="callout danger">
+    <span class="label">Rule</span>
+    If a property doesn't have a documented workload trigger to change it, don't.
+  </div>
+</section>
+
+<section class="slide">
+  <div class="kicker">Config precedence recap</div>
+  <h2>Where the effective value comes from</h2>
+  <table>
+    <tr><th>Priority</th><th>Source</th><th>How to set</th></tr>
+    <tr><td>1</td><td>Dynamic topic override</td><td><code>kafka-configs --entity-type topics --alter</code></td></tr>
+    <tr><td>2</td><td>Dynamic broker (per-broker)</td><td><code>--entity-type brokers --entity-name N</code></td></tr>
+    <tr><td>3</td><td>Dynamic broker default</td><td><code>--entity-type brokers --entity-default</code></td></tr>
+    <tr><td>4</td><td>Static broker</td><td><code>server.properties</code> + restart</td></tr>
+    <tr><td>5</td><td>Kafka code default</td><td>Baked in</td></tr>
+  </table>
+  <div class="callout info">
+    Always use <code>--describe --all</code> to see the source (<code>synonyms=</code>) — not just the current value.
+  </div>
+</section>
+
+<section class="slide">
+  <div class="takeaway" style="font-size:2.2vw;padding:5vh 4vw">
+    Every property has a default.<br>
+    Every override has a reason.<br>
+    <em>Document the reason with the override.</em>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="kicker">Where to look</div>
+  <h2>Official references</h2>
+  <ul>
+    <li>Topic Configurations — <code>kafka.apache.org/documentation/#topicconfigs</code></li>
+    <li>Broker Configurations — <code>kafka.apache.org/documentation/#brokerconfigs</code></li>
+    <li>Compaction internals — <code>kafka.apache.org/documentation/#compaction</code></li>
+    <li>Tiered storage — KIP-405 wiki + <code>kafka.apache.org/43/documentation/#tiered_storage</code></li>
+  </ul>
+  <p class="muted" style="margin-top:2vh">Version-match! Property defaults change between Kafka releases.</p>
+</section>
+
+<section class="slide cover">
+  <div class="kicker">End of reference deck</div>
+  <h1>Thank you</h1>
+  <div class="subtitle">Property questions &amp; discussion</div>
+  <div class="meta">
+    Pair with · <strong>slides.html</strong> for the full topic administration deep-dive<br>
+    Or open the paired lab · <strong>Scenario-12.2-Config-Precedence.md</strong>
+  </div>
+</section>
+
+<!-- ============================================================= HELP OVERLAY -->
+<div id="help">
+  <h3>Keyboard shortcuts</h3>
+  <table>
+    <tr><td><kbd>→</kbd> <kbd>Space</kbd> <kbd>PgDn</kbd></td><td>Next slide</td></tr>
+    <tr><td><kbd>←</kbd> <kbd>PgUp</kbd></td><td>Previous slide</td></tr>
+    <tr><td><kbd>Home</kbd> / <kbd>End</kbd></td><td>First / last slide</td></tr>
+    <tr><td><kbd>O</kbd></td><td>Overview grid (click any slide to jump)</td></tr>
+    <tr><td><kbd>F</kbd></td><td>Fullscreen toggle</td></tr>
+    <tr><td><kbd>?</kbd></td><td>Show / hide this help</td></tr>
+    <tr><td><kbd>Esc</kbd></td><td>Close overview / help</td></tr>
+    <tr><td>Click right / left half</td><td>Next / previous slide</td></tr>
+    <tr><td><kbd>Ctrl</kbd>+<kbd>P</kbd></td><td>Print / save as PDF (one slide per page)</td></tr>
+  </table>
+  <div class="close">Press <kbd>?</kbd> or <kbd>Esc</kbd> to close</div>
+</div>
+
+<!-- ============================================================= CHROME -->
+<div class="footer"><span id="cur">1</span> / <span id="total">1</span></div>
+<div class="progress" id="progress"></div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let cur = 0;
+  document.getElementById('total').textContent = total;
+
+  function show(i) {
+    slides.forEach(s => s.classList.remove('active'));
+    slides[i].classList.add('active');
+    document.getElementById('cur').textContent = i + 1;
+    document.getElementById('progress').style.width = ((i + 1) / total * 100) + '%';
+    location.hash = '#' + (i + 1);
+  }
+  document.addEventListener('keydown', e => {
+    if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(e.key)) { cur = Math.min(cur + 1, total - 1); show(cur); e.preventDefault(); }
+    if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { cur = Math.max(cur - 1, 0); show(cur); e.preventDefault(); }
+    if (e.key === 'Home') { cur = 0; show(cur); }
+    if (e.key === 'End')  { cur = total - 1; show(cur); }
+  });
+  document.body.addEventListener('click', e => {
+    if (e.target.closest('pre, code, a, table, .callout')) return;
+    if (e.clientX > window.innerWidth / 2) { cur = Math.min(cur + 1, total - 1); }
+    else                                    { cur = Math.max(cur - 1, 0); }
+    show(cur);
+  });
+  const initial = parseInt(location.hash.replace('#',''), 10);
+  if (initial && initial <= total) { cur = initial - 1; }
+  show(cur);
+
+  // ==== overview / fullscreen / help ====
+  const helpEl = document.getElementById('help');
+  slides.forEach((s, i) => {
+    s.setAttribute('data-num', i + 1);
+    s.addEventListener('click', e => {
+      if (document.body.classList.contains('overview')) {
+        cur = i; document.body.classList.remove('overview'); show(cur);
+        e.stopImmediatePropagation();
+      }
+    }, true);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'o' || e.key === 'O') { document.body.classList.toggle('overview'); e.preventDefault(); }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+      else document.exitFullscreen();
+      e.preventDefault();
+    }
+    if (e.key === '?' || (e.shiftKey && e.key === '/')) { helpEl.classList.toggle('on'); e.preventDefault(); }
+    if (e.key === 'Escape') {
+      document.body.classList.remove('overview');
+      helpEl.classList.remove('on');
+    }
+  });
+</script>
+
+</body>
+</html>

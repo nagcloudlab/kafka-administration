@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Kafka Admin Training — Scenario Reference</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #fafbfc; color: #1f2328;
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  body { padding: 4vh 5vw 8vh 22vw; line-height: 1.55; font-size: 15px; }
+
+  /* ==== sticky nav ==== */
+  nav.toc { position: fixed; top: 0; left: 0; width: 18vw; height: 100vh;
+    overflow-y: auto; padding: 3vh 1.4vw; background: white;
+    border-right: 1px solid #d0d7de; }
+  nav.toc h1 { font-size: 13px; font-weight: 700; color: #8250df;
+    text-transform: uppercase; letter-spacing: 0.18em; margin-bottom: 1.5vh; }
+  nav.toc ul { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+  nav.toc li { margin-bottom: 0.35vh; }
+  nav.toc a { color: #24292f; text-decoration: none; display: block;
+    padding: 0.4vh 0.6vw; border-radius: 4px; }
+  nav.toc a:hover { background: #f0f4ff; color: #0969da; }
+  nav.toc a.lab { font-weight: 600; color: #0d1117; margin-top: 1.4vh; padding-top: 0.8vh;
+    border-top: 1px solid #eaeef2; }
+  nav.toc a .n { color: #8250df; font-family: monospace; font-size: 11px;
+    display: inline-block; width: 30px; }
+  nav.toc a.sc { padding-left: 32px; color: #656d76; font-size: 12px; }
+
+  /* ==== hero ==== */
+  .hero { margin-bottom: 5vh; padding-bottom: 3vh;
+    border-bottom: 3px solid #6639ba; }
+  .hero .kicker { color: #8250df; font-size: 13px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.18em; }
+  .hero h1 { font-size: 40px; font-weight: 700; color: #0d1117;
+    margin: 10px 0; line-height: 1.15; }
+  .hero p { color: #656d76; font-size: 16px; max-width: 800px; }
+  .hero .stats { display: flex; gap: 24px; margin-top: 20px; }
+  .hero .stat { padding: 10px 20px; background: white; border: 1px solid #d0d7de;
+    border-radius: 8px; }
+  .hero .stat .num { display: block; font-size: 28px; font-weight: 700;
+    color: #0969da; line-height: 1; }
+  .hero .stat .label { font-size: 12px; color: #656d76;
+    text-transform: uppercase; letter-spacing: 0.1em; margin-top: 4px; }
+
+  /* ==== lab section ==== */
+  section.lab { margin-bottom: 5vh; }
+  section.lab h2 { font-size: 24px; padding: 14px 20px; color: white;
+    background: linear-gradient(135deg, #0969da 0%, #6639ba 100%);
+    border-radius: 10px; font-weight: 700; margin-bottom: 12px;
+    display: flex; align-items: baseline; gap: 12px; }
+  section.lab h2 .n { font-family: monospace; font-size: 13px;
+    background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 4px; }
+  section.lab .lab-intro { color: #656d76; font-size: 15px;
+    max-width: 900px; margin: 0 8px 20px 8px; }
+  section.lab .lab-intro strong { color: #24292f; }
+
+  /* ==== scenario cards ==== */
+  .scenario-list { display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .scenario { background: white; border: 1px solid #d0d7de; border-radius: 10px;
+    padding: 18px 22px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    transition: border-color 0.15s, box-shadow 0.15s; }
+  .scenario:hover { border-color: #8250df; box-shadow: 0 2px 8px rgba(130,80,223,0.1); }
+  .scenario:target { border-color: #0969da; box-shadow: 0 0 0 3px #b6d7ff; }
+
+  .sc-header { display: flex; align-items: baseline; gap: 12px;
+    margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eaeef2; }
+  .sc-num { font-family: "JetBrains Mono", monospace; font-size: 13px;
+    background: #6639ba; color: white; padding: 3px 10px; border-radius: 5px;
+    font-weight: 700; letter-spacing: 0.02em; }
+  .sc-num.setup { background: #656d76; }
+  .sc-header h3 { font-size: 18px; font-weight: 600; color: #0d1117;
+    flex: 1; }
+  .tag { font-size: 10px; padding: 3px 9px; border-radius: 999px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+  .tag.ops { background: #ddf4ff; color: #0969da; }
+  .tag.durability { background: #dcfce7; color: #14532d; }
+  .tag.storage { background: #fff8c5; color: #4d3800; }
+  .tag.clients { background: #f0e7ff; color: #6639ba; }
+  .tag.security { background: #fee2e2; color: #7f1d1d; }
+  .tag.infra { background: #f6f8fa; color: #656d76; }
+  .tag.dr { background: #ddf4ff; color: #002d5c; }
+  .tag.monitoring { background: #dcfce7; color: #1a7f37; }
+  .tag.depth { background: #f0e7ff; color: #8250df; }
+
+  .scenario p { font-size: 14px; line-height: 1.55; margin-bottom: 8px;
+    color: #24292f; }
+  .scenario p strong { color: #24292f; font-weight: 700; }
+  .scenario .problem strong { color: #cf222e; }
+  .scenario .demo strong { color: #0969da; }
+
+  .takeaway { margin: 12px 0; padding: 10px 14px;
+    background: linear-gradient(135deg, #fff8c5 0%, #ffedd5 100%);
+    border-left: 4px solid #bf8700; border-radius: 0 6px 6px 0;
+    font-size: 14px; color: #4d3800; font-weight: 500; font-style: italic; }
+  .takeaway::before { content: "★  "; color: #bf8700; font-weight: 700; font-style: normal; }
+
+  .link { display: inline-block; margin-top: 6px; color: #0969da;
+    text-decoration: none; font-size: 13px; font-weight: 600; }
+  .link:hover { text-decoration: underline; }
+  .link::after { content: " →"; }
+
+  code { font-family: "JetBrains Mono", Menlo, monospace;
+    background: #eaeef2; padding: 1px 5px; border-radius: 3px;
+    color: #8250df; font-size: 0.92em; }
+
+  /* ==== special: Lab 12 slide-deck note ==== */
+  .deck-note { background: #f0e7ff; border: 1px solid #d4baff; border-radius: 8px;
+    padding: 12px 18px; margin-bottom: 12px; font-size: 13px; color: #4d2d99; }
+  .deck-note strong { color: #6639ba; }
+  .deck-note a { color: #6639ba; font-weight: 600; text-decoration: none; margin-right: 12px; }
+  .deck-note a:hover { text-decoration: underline; }
+
+  /* ==== print ==== */
+  @media print {
+    body { padding: 20px; font-size: 11px; }
+    nav.toc { display: none; }
+    section.lab { page-break-inside: avoid; }
+    section.lab h2 { background: #f6f8fa !important; color: #0d1117 !important;
+      border: 2px solid #0969da; }
+    .scenario { box-shadow: none; page-break-inside: avoid; }
+    .hero { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <h1>Scenarios</h1>
+  <ul>
+    <li><a class="lab" href="#lab-01"><span class="n">01</span>Cluster Setup</a></li>
+    <li><a class="lab" href="#lab-02"><span class="n">02</span>Monitoring Setup</a></li>
+
+    <li><a class="lab" href="#lab-03"><span class="n">03</span>Broker Lifecycle</a></li>
+    <li><a class="sc" href="#s-3-1">3.1 Controlled shutdown</a></li>
+    <li><a class="sc" href="#s-3-2">3.2 Stale broker epoch</a></li>
+    <li><a class="sc" href="#s-3-3">3.3 Under-replicated</a></li>
+
+    <li><a class="lab" href="#lab-04"><span class="n">04</span>Replication</a></li>
+    <li><a class="sc" href="#s-4-1">4.1 min.ISR + acks</a></li>
+    <li><a class="sc" href="#s-4-2">4.2 Unclean election</a></li>
+    <li><a class="sc" href="#s-4-3">4.3 Rack awareness</a></li>
+
+    <li><a class="lab" href="#lab-05"><span class="n">05</span>Data Lifecycle</a></li>
+    <li><a class="sc" href="#s-5-1">5.1 Retention vs compaction</a></li>
+    <li><a class="sc" href="#s-5-2">5.2 Partition reassignment</a></li>
+
+    <li><a class="lab" href="#lab-06"><span class="n">06</span>Client Isolation</a></li>
+    <li><a class="sc" href="#s-6-1">6.1 Rebalance storm</a></li>
+    <li><a class="sc" href="#s-6-2">6.2 Quotas</a></li>
+
+    <li><a class="lab" href="#lab-07"><span class="n">07</span>Security</a></li>
+    <li><a class="sc" href="#s-7-1">7.1 SASL/SCRAM</a></li>
+    <li><a class="sc" href="#s-7-2">7.2 ACLs</a></li>
+    <li><a class="sc" href="#s-7-3">7.3 mTLS</a></li>
+
+    <li><a class="lab" href="#lab-08"><span class="n">08</span>KRaft Migration</a></li>
+    <li><a class="sc" href="#s-8-1">8.1 KRaft setup</a></li>
+    <li><a class="sc" href="#s-8-2">8.2 ZK→KRaft migration</a></li>
+
+    <li><a class="lab" href="#lab-09"><span class="n">09</span>Cross-Cluster (MM2)</a></li>
+    <li><a class="sc" href="#s-9-1">9.1 MM2 active-passive</a></li>
+    <li><a class="sc" href="#s-9-2">9.2 Consumer failover</a></li>
+
+    <li><a class="lab" href="#lab-10"><span class="n">10</span>Tiered Storage</a></li>
+    <li><a class="sc" href="#s-10-1">10.1 Enable tiering</a></li>
+
+    <li><a class="lab" href="#lab-11"><span class="n">11</span>Observability</a></li>
+    <li><a class="sc" href="#s-11-1">11.1 Alerting</a></li>
+    <li><a class="sc" href="#s-11-2">11.2 Consumer lag</a></li>
+
+    <li><a class="lab" href="#lab-12"><span class="n">12</span>Topics Deep-Dive</a></li>
+    <li><a class="sc" href="#s-12-1">12.1 Anatomy on disk</a></li>
+    <li><a class="sc" href="#s-12-2">12.2 Config precedence</a></li>
+    <li><a class="sc" href="#s-12-3">12.3 Partition growth</a></li>
+    <li><a class="sc" href="#s-12-4">12.4 Message size</a></li>
+  </ul>
+</nav>
+
+<!-- ============================================================= HERO -->
+<div class="hero">
+  <div class="kicker">Scenario Reference · Trainer &amp; Student Handout</div>
+  <h1>Kafka Admin Training<br>Lab Scenarios</h1>
+  <p>Twenty-four scenarios across twelve labs — every one built as <strong>Problem → Solution → Demo</strong>.
+  Ctrl+P to save as PDF handout. Click any scenario link to open the full <code>.md</code> file with commands and instructor notes.</p>
+  <div class="stats">
+    <div class="stat"><span class="num">12</span><span class="label">Labs</span></div>
+    <div class="stat"><span class="num">24</span><span class="label">Scenarios</span></div>
+    <div class="stat"><span class="num">5</span><span class="label">Days · 40 h</span></div>
+    <div class="stat"><span class="num">6</span><span class="label">Grafana dashboards</span></div>
+  </div>
+</div>
+
+<!-- ============================================================= LAB 01 -->
+<section class="lab" id="lab-01">
+  <h2><span class="n">Lab 01</span>Cluster Setup</h2>
+  <div class="lab-intro">Build a 1 ZooKeeper + 3 broker cluster from the Apache Kafka 3.9 tarball. Run each node in its own terminal (not Docker) so startup order, logs, and shutdown behaviour are visible. Attach Kafbat UI. First produce and consume. <strong>~60 min.</strong></div>
+  <div class="scenario-list">
+    <div class="scenario">
+      <div class="sc-header">
+        <span class="sc-num setup">Setup</span>
+        <h3>Cluster stand-up walkthrough</h3>
+        <span class="tag ops">foundation</span>
+      </div>
+      <p><strong>Steps:</strong> download Kafka · lay out configs · start ZK + 3 brokers · create <code>demo</code> topic (RF=3) · first produce/consume · attach Kafka UI on <code>:8080</code>.</p>
+      <p><strong>Ships:</strong> the <code>kafka-lab/</code> runtime folder and <code>cluster.sh</code> helper used by every subsequent lab.</p>
+      <div class="takeaway">The CLI is authoritative; Kafka UI is a supplement — every UI action maps to an Admin API call.</div>
+      <a class="link" href="Lab-01-Cluster-Setup/README.md">Open Lab 01</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= LAB 02 -->
+<section class="lab" id="lab-02">
+  <h2><span class="n">Lab 02</span>Monitoring Setup</h2>
+  <div class="lab-intro">Attach the JMX Prometheus exporter to each broker; bring up Prometheus + Grafana in Docker; auto-provision 5 dashboards tied to the failure-mode scenarios in Labs 3–11. <strong>~30 min.</strong></div>
+  <div class="scenario-list">
+    <div class="scenario">
+      <div class="sc-header">
+        <span class="sc-num setup">Setup</span>
+        <h3>JMX exporter → Prometheus → Grafana</h3>
+        <span class="tag monitoring">foundation</span>
+      </div>
+      <p><strong>Steps:</strong> download <code>jmx_prometheus_javaagent.jar</code> · use <code>cluster.sh start-monitoring</code> (attaches the agent per-broker) · <code>./up.sh</code> brings up Prom + Grafana with the correct WSL/host IP substituted into <code>prometheus.yml</code>.</p>
+      <p><strong>Dashboards shipped:</strong> Kafka Admin Training · Topic Traffic · Requests &amp; Quotas · Storage &amp; Log Cleaner · JVM &amp; Broker Health.</p>
+      <div class="takeaway">On WSL2 Docker Desktop, <code>host.docker.internal</code> doesn't route back to WSL — <code>up.sh</code> substitutes the real IP into <code>prometheus.yml.template</code>.</div>
+      <a class="link" href="Lab-02-Monitoring-Setup/README.md">Open Lab 02</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================= LAB 03 -->
+<section class="lab" id="lab-03">
+  <h2><span class="n">Lab 03</span>Broker Lifecycle &amp; Availability</h2>
+  <div class="lab-intro">Three failure modes an Ops team pages on: graceful vs ungraceful shutdown, the stale-broker-epoch trap, and reading the URP alert without over-reacting.</div>
+  <div class="scenario-list">
+
+    <div class="scenario" id="s-3-1">
+      <div class="sc-header">
+        <span class="sc-num">3.1</span>
+        <h3>Controlled shutdown vs <code>kill -9</code></h3>
+        <span class="tag ops">ops</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Runbook says "kill -9 if slow." Wrong. SIGTERM migrates leaderships <em>before</em> releasing the socket → clients see one clean redirect (&lt;100 ms). SIGKILL skips migration → clients hammer a dead leader until ZK session expires (5–15 s of errors).</p>
+      <p class="demo"><strong>Demo:</strong> 4 terminals; producer at 2000 rec/s <code>acks=all</code>; graceful stop → <code>records/sec</code> stays flat · <code>kill -9</code> → <code>records/sec</code> drops to zero for ~10 s.</p>
+      <div class="takeaway">SIGTERM migrates leadership. SIGKILL migrates client errors.</div>
+      <a class="link" href="Lab-03-Broker-Lifecycle/Scenario-3.1-Controlled-Shutdown.md">Open Scenario 3.1</a>
+    </div>
+
+    <div class="scenario" id="s-3-2">
+      <div class="sc-header">
+        <span class="sc-num">3.2</span>
+        <h3>Stale broker epoch (the incident, on purpose)</h3>
+        <span class="tag ops">ops</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Cluster is running. Operator runs <code>./cluster.sh start</code> again → <code>NodeExistsException</code> on <code>/brokers/ids/N</code> — the <em>live</em> znode. "Cleans up" the znode → live brokers become fenced zombies. Producer hangs; consumer sees nothing.</p>
+      <p class="demo"><strong>Demo:</strong> reproduce today's real incident. Diagnosis: <code>ps → ss -tlnp → znode timestamp</code>. Recovery: <code>kill -9</code> (the one Chapter 3 case where SIGKILL is correct).</p>
+      <div class="takeaway">Ephemeral znodes belong to live sessions, not dead processes. Check the port before you delete.</div>
+      <a class="link" href="Lab-03-Broker-Lifecycle/Scenario-3.2-Stale-Broker-Epoch.md">Open Scenario 3.2</a>
+    </div>
+
+    <div class="scenario" id="s-3-3">
+      <div class="sc-header">
+        <span class="sc-num">3.3</span>
+        <h3>Under-replicated partitions (URP is not a page)</h3>
+        <span class="tag ops">ops</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> URP fires with two very different root causes — broker gone (real risk) vs slow follower (no risk). Same metric, same alert. Operators either wake up at 3 AM for a lagging follower, or (worse) stop responding entirely.</p>
+      <p class="demo"><strong>Demo:</strong> throttle broker 102's follower fetches to 1 KB/s using <code>follower.replication.throttled.rate</code>. ISR shrinks; URP fires. Triage: <code>ss + log-dirs + configs</code>.</p>
+      <div class="takeaway">URP = "behind on data", not "data at risk". The real page metric is <code>UnderMinIsrPartitionCount</code>. Triage before you page.</div>
+      <a class="link" href="Lab-03-Broker-Lifecycle/Scenario-3.3-Under-Replicated-Partitions.md">Open Scenario 3.3</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================= LAB 04 -->
+<section class="lab" id="lab-04">
+  <h2><span class="n">Lab 04</span>Replication &amp; Durability</h2>
+  <div class="lab-intro">The write-path safety net: <code>min.insync.replicas</code>, <code>acks=all</code>, unclean leader election, rack awareness. The three durability decisions every topic makes.</div>
+  <div class="scenario-list">
+
+    <div class="scenario" id="s-4-1">
+      <div class="sc-header">
+        <span class="sc-num">4.1</span>
+        <h3><code>min.insync.replicas</code> + <code>acks=all</code></h3>
+        <span class="tag durability">durability</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Three knobs (RF, min.ISR, acks) interact to define durability. "Higher = safer" is wrong — min.ISR=3 on RF=3 is <em>brittle</em>, not durable.</p>
+      <p class="demo"><strong>Demo:</strong> three topics (safe / brittle / risky) with different min.ISR (2 / 3 / 1). Stop one broker; watch the three producers react differently — one keeps working, one fails, one keeps working <em>but silently at risk</em>.</p>
+      <div class="takeaway">RF − min.ISR = failures you tolerate. Match to the workload's durability need.</div>
+      <a class="link" href="Lab-04-Replication-Durability/Scenario-4.1-MinISR-Acks.md">Open Scenario 4.1</a>
+    </div>
+
+    <div class="scenario" id="s-4-2">
+      <div class="sc-header">
+        <span class="sc-num">4.2</span>
+        <h3>Unclean leader election (silent data loss)</h3>
+        <span class="tag durability">durability</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> If ISR goes empty, does Kafka elect an out-of-sync replica (availability with data loss) or wait (durability with downtime)?</p>
+      <p class="demo"><strong>Demo:</strong> twin topics (unclean=true / false), same failure sequence. Watch the offsets probe: unclean topic silently drops from :100 to :50; clean topic stays offline until the leader returns.</p>
+      <div class="takeaway">Unclean election trades durability for availability. Silent by default. Alert on every occurrence.</div>
+      <a class="link" href="Lab-04-Replication-Durability/Scenario-4.2-Unclean-Election.md">Open Scenario 4.2</a>
+    </div>
+
+    <div class="scenario" id="s-4-3">
+      <div class="sc-header">
+        <span class="sc-num">4.3</span>
+        <h3>Rack awareness (placing replicas across failure domains)</h3>
+        <span class="tag durability">durability</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Default placer is rack-blind. All 3 replicas can end up in the same rack → single rack failure = data loss. Adding <code>broker.rack</code> later doesn't retroactively fix existing topics.</p>
+      <p class="demo"><strong>Demo:</strong> add <code>broker.rack=r1/r2/r3</code>, rolling restart. Create a new topic → rack-aware placement. Compare with a pre-rack topic (unchanged). Fix via <code>kafka-reassign-partitions</code>.</p>
+      <div class="takeaway">Set <code>broker.rack</code> cluster-wide at stand-up. Otherwise you're one accidental rack fault from an unclean election.</div>
+      <a class="link" href="Lab-04-Replication-Durability/Scenario-4.3-Rack-Awareness.md">Open Scenario 4.3</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================= LAB 05 -->
+<section class="lab" id="lab-05">
+  <h2><span class="n">Lab 05</span>Data Lifecycle</h2>
+  <div class="lab-intro">How data leaves your topic (retention vs compaction) and how to move it between brokers without hurting production traffic.</div>
+  <div class="scenario-list">
+
+    <div class="scenario" id="s-5-1">
+      <div class="sc-header">
+        <span class="sc-num">5.1</span>
+        <h3>Retention vs compaction (what stays, when)</h3>
+        <span class="tag storage">storage</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Two cleanup policies with different mental models. Common traps: retention deletes SEGMENTS (not messages); compaction requires KEYS (null-keyed records live forever); cleaner-death is silent.</p>
+      <p class="demo"><strong>Demo:</strong> two topics (<code>delete</code> vs <code>compact</code>) with tiny segments (<code>segment.ms=10s</code>). Produce keyed records; wait; consume both — delete topic drops old segments, compact topic keeps latest-per-key only.</p>
+      <div class="takeaway">Delete deletes segments (not messages). Compact keeps latest per key (requires keys). Different tools — pick per workload.</div>
+      <a class="link" href="Lab-05-Data-Lifecycle/Scenario-5.1-Retention-vs-Compaction.md">Open Scenario 5.1</a>
+    </div>
+
+    <div class="scenario" id="s-5-2">
+      <div class="sc-header">
+        <span class="sc-num">5.2</span>
+        <h3>Partition reassignment without saturating the network</h3>
+        <span class="tag storage">storage</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Moving partitions between brokers can spike replication traffic and starve clients. Skipping <code>--verify</code> leaves throttle configs applied forever.</p>
+      <p class="demo"><strong>Demo:</strong> two topics filled with 50 MB each; reassign one with <code>--throttle 5MB/s</code>, the other unthrottled. Time both via <code>date</code>. Watch broker BytesIn/s via JMX. Clean up throttles with <code>--verify</code>.</p>
+      <div class="takeaway">Reassignment without <code>--throttle</code> is a self-inflicted DoS. Without <code>--verify</code>, the throttle never leaves.</div>
+      <a class="link" href="Lab-05-Data-Lifecycle/Scenario-5.2-Partition-Reassignment.md">Open Scenario 5.2</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================= LAB 06 -->
+<section class="lab" id="lab-06">
+  <h2><span class="n">Lab 06</span>Client Isolation</h2>
+  <div class="lab-intro">Consumer-side rebalance storms and producer/consumer quotas — how to keep one client from ruining the party for everyone else.</div>
+  <div class="scenario-list">
+
+    <div class="scenario" id="s-6-1">
+      <div class="sc-header">
+        <span class="sc-num">6.1</span>
+        <h3>Consumer group rebalance storm</h3>
+        <span class="tag clients">clients</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Short <code>session.timeout.ms</code> + real GC pause = endless rebalance. Consumer keeps getting evicted → rejoins → evicts others. Group processes nothing.</p>
+      <p class="demo"><strong>Demo:</strong> 3 consumers with <code>session.timeout.ms=6000</code>; SIGSTOP one for 10 s (fake GC pause), then SIGCONT. Watch two rebalances happen per pause. Contrast <code>RangeAssignor</code> vs <code>CooperativeStickyAssignor</code>.</p>
+      <div class="takeaway">Rebalance storms are a client-tuning problem. Short <code>session.timeout.ms</code> + real GC = storm. Use cooperative + static membership.</div>
+      <a class="link" href="Lab-06-Client-Isolation/Scenario-6.1-Rebalance-Storm.md">Open Scenario 6.1</a>
+    </div>
+
+    <div class="scenario" id="s-6-2">
+      <div class="sc-header">
+        <span class="sc-num">6.2</span>
+        <h3>Quotas (protecting a shared cluster from one runaway client)</h3>
+        <span class="tag clients">clients</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> One misbehaving client can saturate broker NIC or CPU. Client-id quotas are honour-only (anyone can pick any client-id); user quotas require SASL; default quotas are the real safety net.</p>
+      <p class="demo"><strong>Demo:</strong> baseline perf-test (50 MB/s) → apply <code>producer_byte_rate=1MB/s</code> to the client-id → rerun (~1 MB/s). Prove same test with a different client-id runs full speed → set default quota → all clients capped.</p>
+      <div class="takeaway">Quotas are the seat-belt of a shared cluster. Set a default; override only where justified. Client-id is hygiene; user is isolation.</div>
+      <a class="link" href="Lab-06-Client-Isolation/Scenario-6.2-Quotas.md">Open Scenario 6.2</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================= LAB 07 -->
+<section class="lab" id="lab-07">
+  <h2><span class="n">Lab 07</span>Security</h2>
+  <div class="lab-intro">Authentication (who are you?), authorization (what may you do?), encryption + cert-based auth (how the wire is protected). Each scenario stacks on the previous.</div>
+  <div class="scenario-list">
+
+    <div class="scenario" id="s-7-1">
+      <div class="sc-header">
+        <span class="sc-num">7.1</span>
+        <h3>SASL/SCRAM authentication</h3>
+        <span class="tag security">security</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Default cluster has no authentication — any TCP client that can reach the brokers can produce and consume. SASL/SCRAM adds password-based auth without external dependencies (unlike Kerberos or OAuth).</p>
+      <p class="demo"><strong>Demo:</strong> add a <code>SASL_PLAINTEXT</code> listener on 9192/9193/9194 alongside the plaintext one; create SCRAM users; connect with and without JAAS config. Failure fingerprint is a distinctive log line.</p>
+      <div class="takeaway">Two listeners, one broker restart. SASL is add-on, not rip-and-replace — clients migrate at their own pace.</div>
+      <a class="link" href="Lab-07-Security/Scenario-7.1-SASL-SCRAM.md">Open Scenario 7.1</a>
+    </div>
+
+    <div class="scenario" id="s-7-2">
+      <div class="sc-header">
+        <span class="sc-num">7.2</span>
+        <h3>ACLs (what may you do?)</h3>
+        <span class="tag security">security</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> With SASL enabled, principals are authenticated but have no restrictions until ACLs are applied. Common trap: granting Write on topic but forgetting Read on consumer group → consumer stuck at <code>poll()</code>.</p>
+      <p class="demo"><strong>Demo:</strong> enable <code>AclAuthorizer</code>; watch alice denied on unauthorised topics; grant minimum ACLs (Write + IdempotentWrite + Group Read); consume + produce successfully.</p>
+      <div class="takeaway">SASL says who. ACL says what. Deny-by-default, prefix-scoped, log every deny.</div>
+      <a class="link" href="Lab-07-Security/Scenario-7.2-ACLs.md">Open Scenario 7.2</a>
+    </div>
+
+    <div class="scenario" id="s-7-3">
+      <div class="sc-header">
+        <span class="sc-num">7.3</span>
+        <h3>mTLS (encryption + cert-based auth on the wire)</h3>
+        <span class="tag security">security</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> SASL/PLAINTEXT hashes passwords but leaves the payload readable. mTLS gives you encryption AND client identity via certificate — but the setup involves CA, keystores, truststores, and hostname-verification traps.</p>
+      <p class="demo"><strong>Demo:</strong> generate CA + broker + client certs with <code>openssl</code> and <code>keytool</code>; add <code>SSL</code> listener on 9292/9293/9294; prove that a client without a keystore is rejected at TLS handshake (<code>bad_certificate</code>).</p>
+      <div class="takeaway">Encryption + identity in one protocol. Client cert is authoritative — TLS handshake fails before any Kafka request is sent.</div>
+      <a class="link" href="Lab-07-Security/Scenario-7.3-mTLS.md">Open Scenario 7.3</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================= LAB 08 -->
+<section class="lab" id="lab-08">
+  <h2><span class="n">Lab 08</span>KRaft Mode &amp; Migration</h2>
+  <div class="lab-intro">Kafka without ZooKeeper. Stand up a KRaft cluster, then walk through the KIP-866 dual-write migration from ZK to KRaft.</div>
+  <div class="scenario-list">
+
+    <div class="scenario" id="s-8-1">
+      <div class="sc-header">
+        <span class="sc-num">8.1</span>
+        <h3>Stand up a KRaft cluster</h3>
+        <span class="tag infra">infrastructure</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> ZooKeeper is deprecated (removed in Kafka 4.0). Every 3.x cluster on ZK needs to migrate. First step: understand KRaft.</p>
+      <p class="demo"><strong>Demo:</strong> parallel <code>kafka-lab-kraft/</code> folder; 3 combined-mode nodes on 19092–19094 with controllers on 9095–9097. Format storage with cluster UUID. Watch Raft election. Kill the Raft leader — sub-second failover.</p>
+      <div class="takeaway">KRaft moves cluster metadata into a Raft-replicated Kafka topic. Same broker semantics; simpler operations; entire classes of incidents (stale znodes, session timeouts) disappear.</div>
+      <a class="link" href="Lab-08-KRaft-Migration/Scenario-8.1-KRaft-Cluster-Setup.md">Open Scenario 8.1</a>
+    </div>
+
+    <div class="scenario" id="s-8-2">
+      <div class="sc-header">
+        <span class="sc-num">8.2</span>
+        <h3>ZK → KRaft migration (dual-write + cutover)</h3>
+        <span class="tag infra">infrastructure</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Real production clusters can't wipe-and-rebuild. KIP-866 provides a dual-write path: brokers write to both ZK and KRaft during migration, then cut over.</p>
+      <p class="demo"><strong>Demo:</strong> 5 explicit phases (Prep → Provision → Dual-write → Sync → Cutover). Watch the <code>MigrationState</code> JMX metric advance <code>PRE_MIGRATION → MIGRATION → POST_MIGRATION</code>. One-way cutover.</p>
+      <div class="takeaway">Migration = phases, not steps. The metric drives every decision. Cutover is one-way — do not rush.</div>
+      <a class="link" href="Lab-08-KRaft-Migration/Scenario-8.2-ZK-to-KRaft-Migration.md">Open Scenario 8.2</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================= LAB 09 -->
+<section class="lab" id="lab-09">
+  <h2><span class="n">Lab 09</span>Cross-Cluster Replication (MM2)</h2>
+  <div class="lab-intro">MirrorMaker 2 for active-passive replication + consumer failover with offset translation. The DR pattern every Ops team eventually inherits.</div>
+  <div class="scenario-list">
+
+    <div class="scenario" id="s-9-1">
+      <div class="sc-header">
+        <span class="sc-num">9.1</span>
+        <h3>MM2 active-passive replication</h3>
+        <span class="tag dr">DR</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Copying data from one cluster to another sounds simple, gets complicated fast — topic prefixing, offset semantics, four internal connectors, replication lag.</p>
+      <p class="demo"><strong>Demo:</strong> spin up second cluster in <code>kafka-lab-dr/</code> on 29092–29094. Configure MM2 as standalone process. Produce to source → watch <code>primary.orderevents-2025</code> appear on target with prefix.</p>
+      <div class="takeaway">MM2 is async, prefix-by-default, and does not fail over automatically. Set it up, monitor <code>replication-latency-ms</code>, know your RPO.</div>
+      <a class="link" href="Lab-09-Cross-Cluster-Replication/Scenario-9.1-MM2-Active-Passive.md">Open Scenario 9.1</a>
+    </div>
+
+    <div class="scenario" id="s-9-2">
+      <div class="sc-header">
+        <span class="sc-num">9.2</span>
+        <h3>Consumer failover with offset translation</h3>
+        <span class="tag dr">DR</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Naive failover fails — source consumer's committed offset 42000 means nothing on the target cluster. Depending on <code>auto.offset.reset</code>, consumer restarts from beginning (duplicates) or end (skips).</p>
+      <p class="demo"><strong>Demo:</strong> enable <code>sync.group.offsets.enabled=true</code>. Consume on source, commit offsets. MM2 mirrors AND translates. Stop source consumer; start target consumer with same group.id → resumes at translated offset. Prove split-brain protection (MM2 refuses to sync when group is active on target).</p>
+      <div class="takeaway">Offsets don't survive replication automatically. <code>sync.group.offsets.enabled=true</code> makes them survive; never run the same group on both clusters simultaneously.</div>
+      <a class="link" href="Lab-09-Cross-Cluster-Replication/Scenario-9.2-Consumer-Failover.md">Open Scenario 9.2</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================= LAB 10 -->
+<section class="lab" id="lab-10">
+  <h2><span class="n">Lab 10</span>Tiered Storage (KIP-405)</h2>
+  <div class="lab-intro">Store hot segments on broker disk, cold segments in cheap object storage. Same topic, same consumer semantics — tier boundary is invisible.</div>
+  <div class="scenario-list">
+
+    <div class="scenario" id="s-10-1">
+      <div class="sc-header">
+        <span class="sc-num">10.1</span>
+        <h3>Enable tiered storage &amp; watch segments offload</h3>
+        <span class="tag storage">storage</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Long retention (30d, 90d, 1y) means expensive brokers with big disks. Tiered storage splits into local (recent, on disk) and remote (older, in object storage). Consumer reads old offsets → broker fetches from remote transparently.</p>
+      <p class="demo"><strong>Demo:</strong> configure <code>LocalTieredStorage</code> plugin (uses <code>/tmp/kafka-tiered-storage/</code> as pseudo-remote). Set <code>local.retention.ms=30000</code>, <code>retention.ms=600000</code>. Produce steadily; watch local segments stay bounded while remote grows.</p>
+      <div class="takeaway">Local for the hot 1%, remote for the long tail. <code>local.retention.ms</code> sets the boundary; consumer semantics don't change.</div>
+      <a class="link" href="Lab-10-Tiered-Storage/Scenario-10.1-Tiered-Storage-Setup.md">Open Scenario 10.1</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================= LAB 11 -->
+<section class="lab" id="lab-11">
+  <h2><span class="n">Lab 11</span>Observability at Scale</h2>
+  <div class="lab-intro">Beyond dashboards. Alerting rules for the metrics that actually matter, plus consumer lag exporter for the SLO consumers care about.</div>
+  <div class="scenario-list">
+
+    <div class="scenario" id="s-11-1">
+      <div class="sc-header">
+        <span class="sc-num">11.1</span>
+        <h3>Prometheus alerting + AlertManager</h3>
+        <span class="tag monitoring">monitoring</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Dashboards tell you what's happening now. Alerts tell you when to wake someone up. Alerting badly = alert fatigue → real ones missed.</p>
+      <p class="demo"><strong>Demo:</strong> extend Lab-02's compose with AlertManager + webhook-echo. Write rules with <code>for:</code> clauses. Route <code>severity=critical</code> vs <code>warning</code> separately. Trigger with <code>kill -9</code> on a broker → watch KafkaBrokerDown fire, webhook receives the JSON.</p>
+      <div class="takeaway">Rules are dumb, routing is policy. Alert on symptoms, use <code>for:</code> clauses, inhibit correlated noise, link a runbook.</div>
+      <a class="link" href="Lab-11-Observability-At-Scale/Scenario-11.1-Alerting.md">Open Scenario 11.1</a>
+    </div>
+
+    <div class="scenario" id="s-11-2">
+      <div class="sc-header">
+        <span class="sc-num">11.2</span>
+        <h3>Consumer group lag monitoring</h3>
+        <span class="tag monitoring">monitoring</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Lag is the SLO downstream teams actually care about. Broker JMX doesn't give it directly — need a sidecar. Naive lag alert (<code>lag &gt; N</code>) misses the "consumer is dead" case; combined alert covers both.</p>
+      <p class="demo"><strong>Demo:</strong> add <code>kafka-exporter</code> to Lab-02's compose. Import Consumer Lag dashboard. Start consumer + producer; SIGSTOP the consumer to simulate a stall; watch lag climb; SIGCONT to catch up.</p>
+      <div class="takeaway">Consumer lag is the SLO consumers actually care about. A single exporter, a single dashboard, two alerts — 90% of downstream incidents visible.</div>
+      <a class="link" href="Lab-11-Observability-At-Scale/Scenario-11.2-Consumer-Lag.md">Open Scenario 11.2</a>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================================= LAB 12 -->
+<section class="lab" id="lab-12">
+  <h2><span class="n">Lab 12</span>Topics · Deep-Dive from the Admin View</h2>
+  <div class="lab-intro">The topic is the unit an admin actually operates on. This chapter goes deep — anatomy on disk, config precedence, partition sizing &amp; growth trade-offs, message-size handshake, naming standards, production creation checklist.</div>
+  <div class="deck-note">
+    <strong>Slide decks for this lab:</strong>
+    <a href="Lab-12-Topic-Administration-Deep/slides.html">Main deep-dive (82 slides)</a>
+    <a href="Lab-12-Topic-Administration-Deep/slides-topic-configs.html">Config reference (40 slides)</a>
+    <a href="Lab-12-Topic-Administration-Deep/slides-trainer-notes.html">Trainer speaker notes</a>
+  </div>
+  <div class="scenario-list">
+
+    <div class="scenario" id="s-12-1">
+      <div class="sc-header">
+        <span class="sc-num">12.1</span>
+        <h3>Topic anatomy on disk (segments, indexes, offsets)</h3>
+        <span class="tag depth">deep</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Every real incident eventually forces an admin to look inside a partition directory. What's a segment? An index? What does <code>kafka-dump-log.sh</code> output actually mean?</p>
+      <p class="demo"><strong>Demo:</strong> create a topic with small segments; produce until several roll; dissect the partition dir. Walk through <code>.log</code>, <code>.index</code>, <code>.timeindex</code>, <code>partition.metadata</code>, <code>leader-epoch-checkpoint</code>. Use <code>kafka-dump-log.sh</code> to read a record batch.</p>
+      <div class="takeaway">Every "look inside" tool goes through <code>kafka-dump-log.sh</code>. Rolled segments only; active segment is immune. Never touch log files by hand while broker is running.</div>
+      <a class="link" href="Lab-12-Topic-Administration-Deep/Scenario-12.1-Topic-Anatomy-On-Disk.md">Open Scenario 12.1</a>
+    </div>
+
+    <div class="scenario" id="s-12-2">
+      <div class="sc-header">
+        <span class="sc-num">12.2</span>
+        <h3>Config precedence (broker default vs topic override vs client)</h3>
+        <span class="tag depth">deep</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> When a config value doesn't behave as expected, the debugging question is "where did it come from?" Four sources: dynamic topic override, dynamic broker, static broker, code default.</p>
+      <p class="demo"><strong>Demo:</strong> two topics (inherited vs override). Set cluster-wide broker default dynamically; watch inherited topic pick it up, override topic ignore it. Use <code>--describe --all</code> to see the <code>synonyms=</code> source chain. Audit script to find drift.</p>
+      <div class="takeaway">Topic override wins over broker dynamic wins over broker static wins over code default. Use <code>--describe --all</code> — the <code>synonyms=</code> list is the debugging story.</div>
+      <a class="link" href="Lab-12-Topic-Administration-Deep/Scenario-12.2-Config-Precedence.md">Open Scenario 12.2</a>
+    </div>
+
+    <div class="scenario" id="s-12-3">
+      <div class="sc-header">
+        <span class="sc-num">12.3</span>
+        <h3>Partition sizing &amp; growth (increase allowed, decrease impossible)</h3>
+        <span class="tag depth">deep</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Adding partitions changes <code>hash(key) % N</code> — future keys may map to different partitions than historical ones. Per-key ordering breaks across the change. You cannot decrease.</p>
+      <p class="demo"><strong>Demo:</strong> produce keyed messages, note partition assignment. Grow 3→6 partitions. Produce same keys again — watch some land on new partitions. Try to shrink → <code>Number of partitions cannot be reduced</code> error.</p>
+      <div class="takeaway">Adding partitions is a one-way, application-visible change. Size correctly at creation; add later only with the app team's agreement.</div>
+      <a class="link" href="Lab-12-Topic-Administration-Deep/Scenario-12.3-Partition-Sizing-And-Growth.md">Open Scenario 12.3</a>
+    </div>
+
+    <div class="scenario" id="s-12-4">
+      <div class="sc-header">
+        <span class="sc-num">12.4</span>
+        <h3>Message size limits &amp; auto-create traps</h3>
+        <span class="tag depth">deep</span>
+      </div>
+      <p class="problem"><strong>Problem:</strong> Message size is a five-layer handshake (producer / broker / topic / replication / consumer). Change one, forget the others → cascading errors. Auto-create silently produces topics with RF=1, 1 partition.</p>
+      <p class="demo"><strong>Demo:</strong> Part A — walk the size cascade with distinct error messages at each layer. Part B — reproduce the "typo topic" that auto-creates with terrible defaults; then disable <code>auto.create.topics.enable</code>.</p>
+      <div class="takeaway">Message size is a five-way handshake — strictest wins. Auto-create is convenient in dev and radioactive in prod — turn it off, enforce with ACLs, provision through automation.</div>
+      <a class="link" href="Lab-12-Topic-Administration-Deep/Scenario-12.4-Message-Size-And-Auto-Create.md">Open Scenario 12.4</a>
+    </div>
+
+  </div>
+</section>
+
+</body>
+</html>

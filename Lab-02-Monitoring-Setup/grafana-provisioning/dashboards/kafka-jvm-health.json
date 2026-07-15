@@ -1,0 +1,149 @@
+{
+  "id": null,
+  "uid": "kafka-jvm-health",
+  "title": "Kafka - JVM & Broker Health",
+  "tags": ["kafka", "training", "jvm"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "editable": true,
+  "graphTooltip": 1,
+  "annotations": { "list": [] },
+  "templating": { "list": [] },
+  "panels": [
+
+    {
+      "id": 1, "type": "stat", "title": "Max heap % across brokers",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "max(jvm_memory_heap_used_bytes / jvm_memory_heap_max_bytes) * 100",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100, "decimals": 1,
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "value": null, "color": "green" },
+          { "value": 70, "color": "yellow" },
+          { "value": 85, "color": "red" }
+        ] } } },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 2, "type": "stat", "title": "GC time / min  (rate × 60)",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "sum(rate(jvm_gc_collection_seconds_sum[1m])) * 60",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "s", "decimals": 2,
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "value": null, "color": "green" },
+          { "value": 5, "color": "yellow" },
+          { "value": 15, "color": "red" }
+        ] } } },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 3, "type": "stat", "title": "Avg heap used (MB)",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "avg(jvm_memory_heap_used_bytes) / 1024 / 1024",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "decmbytes", "decimals": 0,
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "blue" }] } } },
+      "options": { "colorMode": "value", "graphMode": "area", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 4, "type": "stat", "title": "Classes loaded (avg per broker)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "avg(jvm_classes_currently_loaded)",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0,
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "purple" }] } } },
+      "options": { "colorMode": "value", "graphMode": "none", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 5, "type": "timeseries", "title": "Heap used per broker (bytes)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "jvm_memory_heap_used_bytes",
+        "legendFormat": "broker {{broker}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "bytes",
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2,
+          "fillOpacity": 10 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+
+    {
+      "id": 6, "type": "timeseries", "title": "Heap % used per broker",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "(jvm_memory_heap_used_bytes / jvm_memory_heap_max_bytes) * 100",
+        "legendFormat": "broker {{broker}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2,
+          "fillOpacity": 10 },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "value": null, "color": "green" },
+          { "value": 70, "color": "yellow" },
+          { "value": 85, "color": "red" }
+        ] } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+
+    {
+      "id": 7, "type": "timeseries", "title": "GC time rate per broker  (Sc 3.1 · pauses ≈ session-timeout territory)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "sum by (broker) (rate(jvm_gc_collection_seconds_sum[1m]))",
+        "legendFormat": "broker {{broker}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "percentunit",
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2,
+          "fillOpacity": 15 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+
+    {
+      "id": 8, "type": "timeseries", "title": "GC events / min per broker",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "sum by (broker) (rate(jvm_gc_collection_seconds_count[1m])) * 60",
+        "legendFormat": "broker {{broker}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 1,
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2,
+          "fillOpacity": 15 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    }
+
+  ]
+}

@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trainer Speaker Notes — Kafka Topics Deep-Dive</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #fafbfc; color: #1f2328;
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+    -webkit-font-smoothing: antialiased; }
+  body { padding: 4vh 5vw 8vh 24vw; line-height: 1.6; font-size: 16px; }
+
+  /* ==== sticky nav ==== */
+  nav.toc { position: fixed; top: 0; left: 0; width: 20vw; height: 100vh;
+    overflow-y: auto; padding: 3vh 1.5vw; background: white;
+    border-right: 1px solid #d0d7de; }
+  nav.toc h1 { font-size: 15px; font-weight: 700; color: #8250df;
+    text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 1.5vh; }
+  nav.toc ol { list-style: none; padding: 0; margin: 0; counter-reset: sect; font-size: 13px; }
+  nav.toc li { margin-bottom: 0.4vh; }
+  nav.toc a { color: #24292f; text-decoration: none; display: block;
+    padding: 0.4vh 0.6vw; border-radius: 4px; }
+  nav.toc a:hover { background: #f0f4ff; color: #0969da; }
+  nav.toc a.section { font-weight: 700; color: #0d1117; margin-top: 1.5vh;
+    padding-top: 1vh; border-top: 1px solid #eaeef2; }
+
+  /* ==== main ==== */
+  main { max-width: 900px; }
+  .book-header { margin-bottom: 6vh; padding-bottom: 3vh;
+    border-bottom: 3px solid #6639ba; }
+  .book-header .subtitle { color: #8250df; font-size: 14px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.2em; }
+  .book-header h1 { font-size: 42px; font-weight: 700; color: #0d1117;
+    margin: 12px 0; line-height: 1.15; }
+  .book-header p { color: #656d76; font-size: 17px; }
+  .book-header ul { list-style: none; padding: 0; margin-top: 12px; font-size: 15px; color: #656d76; }
+  .book-header li { padding-left: 18px; text-indent: -18px; margin-bottom: 4px; }
+  .book-header li::before { content: "▸ "; color: #0969da; }
+
+  /* ==== section headers ==== */
+  h2.section-header {
+    font-size: 28px; color: white; padding: 3vh 2vw; margin: 8vh -2vw 4vh -2vw;
+    background: linear-gradient(135deg, #0969da 0%, #6639ba 100%);
+    border-radius: 10px; font-weight: 700;
+  }
+  h2.section-header .n { font-size: 13px; opacity: 0.7; display: block;
+    text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 4px; font-weight: 400; }
+
+  /* ==== slide notes card ==== */
+  article.slide-notes { background: white; border: 1px solid #d0d7de;
+    border-radius: 10px; padding: 20px 24px; margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
+  article.slide-notes:target { border-color: #0969da; box-shadow: 0 0 0 4px #b6d7ff; }
+
+  .slide-title { display: flex; align-items: baseline; gap: 12px;
+    margin-bottom: 4px; padding-bottom: 10px; border-bottom: 1px solid #eaeef2; }
+  .num { font-family: "JetBrains Mono", monospace; font-size: 13px;
+    background: #6639ba; color: white; padding: 3px 10px; border-radius: 4px;
+    font-weight: 700; }
+  .kicker { font-size: 11px; color: #8250df; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.15em; }
+  .slide-title h3 { font-size: 20px; font-weight: 600; color: #0d1117;
+    margin-left: auto; text-align: right; }
+
+  .synopsis { color: #656d76; font-style: italic; font-size: 14px; margin: 8px 0 14px 0; }
+
+  .block { padding: 10px 14px; margin: 8px 0; border-radius: 6px;
+    border-left: 4px solid #d0d7de; background: #f6f8fa; }
+  .block h4 { font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.15em; color: #24292f; margin-bottom: 6px; }
+  .block p { font-size: 14.5px; line-height: 1.55; margin-bottom: 4px; color: #1f2328; }
+  .block ul { list-style: none; font-size: 14.5px; padding: 0; }
+  .block ul li { padding-left: 16px; text-indent: -16px; margin-bottom: 3px; }
+  .block ul li::before { content: "· "; color: #656d76; }
+
+  .say  { border-left-color: #0969da; background: #ddf4ff; }
+  .say h4  { color: #0969da; }
+  .poll { border-left-color: #8250df; background: #f0e7ff; }
+  .poll h4 { color: #8250df; }
+  .poll p em { color: #6639ba; font-style: normal; font-weight: 600; }
+  .watch { border-left-color: #bf8700; background: #fff8c5; }
+  .watch h4 { color: #9a6700; }
+  .demo { border-left-color: #1a7f37; background: #dcfce7; }
+  .demo h4 { color: #1a7f37; }
+
+  .transition { color: #6639ba; font-size: 13px; margin-top: 10px;
+    font-family: "JetBrains Mono", monospace; padding-top: 8px;
+    border-top: 1px dashed #d0d7de; }
+
+  code { font-family: "JetBrains Mono", Menlo, monospace;
+    background: #eaeef2; padding: 1px 5px; border-radius: 3px;
+    color: #8250df; font-size: 0.92em; }
+
+  /* ==== print ==== */
+  @media print {
+    body { padding: 20px; font-size: 11px; }
+    nav.toc { display: none; }
+    main { max-width: none; }
+    article.slide-notes { page-break-inside: avoid; margin-bottom: 12px; box-shadow: none; }
+    h2.section-header { page-break-before: always; margin: 0 0 12px 0; }
+    .book-header { page-break-after: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================= TOC -->
+<nav class="toc">
+  <h1>Trainer Notes</h1>
+  <ol>
+    <li><a class="section" href="#sec-1">1 · Introduction</a></li>
+    <li><a href="#slide-1">1. Cover</a></li>
+    <li><a href="#slide-2">2. Objectives</a></li>
+    <li><a href="#slide-3">3. Why topics matter</a></li>
+
+    <li><a class="section" href="#sec-2">2 · Running Scenario</a></li>
+    <li><a href="#slide-4">4. Section header</a></li>
+    <li><a href="#slide-5">5. orders.events</a></li>
+
+    <li><a class="section" href="#sec-3">3 · Topic Anatomy</a></li>
+    <li><a href="#slide-6">6. Section header</a></li>
+    <li><a href="#slide-7">7. Named stream</a></li>
+    <li><a href="#slide-8">8. Partitions</a></li>
+    <li><a href="#slide-9">9. Offsets</a></li>
+    <li><a href="#slide-10">10. Records</a></li>
+    <li><a href="#slide-11">11. Ordering</a></li>
+    <li><a href="#slide-12">12. Partitioner</a></li>
+    <li><a href="#slide-13">13. Hot partition</a></li>
+
+    <li><a class="section" href="#sec-4">4 · Choosing Partition Count</a></li>
+    <li><a href="#slide-14">14. Section header</a></li>
+    <li><a href="#slide-15">15. Five dimensions</a></li>
+    <li><a href="#slide-16">16. Inputs</a></li>
+    <li><a href="#slide-17">17. P_write formula</a></li>
+    <li><a href="#slide-18">18. P_write example</a></li>
+    <li><a href="#slide-19">19. P_read formula</a></li>
+    <li><a href="#slide-20">20. P_read example</a></li>
+    <li><a href="#slide-21">21. Take max</a></li>
+    <li><a href="#slide-22">22. Consumer parallelism</a></li>
+    <li><a href="#slide-23">23. Multi-group read</a></li>
+    <li><a href="#slide-24">24. Record vs byte rate</a></li>
+    <li><a href="#slide-25">25. Compression</a></li>
+    <li><a href="#slide-26">26. Replication multiplier</a></li>
+    <li><a href="#slide-27">27. Broker distribution</a></li>
+    <li><a href="#slide-28">28. Storage sizing</a></li>
+    <li><a href="#slide-29">29. Per-partition size</a></li>
+    <li><a href="#slide-30">30. Recovery time</a></li>
+    <li><a href="#slide-31">31. Growth headroom</a></li>
+    <li><a href="#slide-32">32. Reordering trap</a></li>
+    <li><a href="#slide-33">33. Key cardinality</a></li>
+    <li><a href="#slide-34">34. Skew safety</a></li>
+    <li><a href="#slide-35">35. Add vs split</a></li>
+    <li><a href="#slide-36">36. Decision flow</a></li>
+    <li><a href="#slide-37">37. Not free</a></li>
+
+    <li><a class="section" href="#sec-5">5 · Replication</a></li>
+    <li><a href="#slide-38">38. Section header</a></li>
+    <li><a href="#slide-39">39. RF concept</a></li>
+    <li><a href="#slide-40">40. ISR</a></li>
+    <li><a href="#slide-41">41. Durability triangle</a></li>
+    <li><a href="#slide-42">42. Safety formula</a></li>
+    <li><a href="#slide-43">43. Broker failure</a></li>
+    <li><a href="#slide-44">44. Unclean election</a></li>
+
+    <li><a class="section" href="#sec-6">6 · Topic Operations</a></li>
+    <li><a href="#slide-45">45. Section header</a></li>
+    <li><a href="#slide-46">46. Naming</a></li>
+    <li><a href="#slide-47">47. Pre-create checklist</a></li>
+    <li><a href="#slide-48">48. Create command</a></li>
+    <li><a href="#slide-49">49. Describe output</a></li>
+    <li><a href="#slide-50">50. Filters</a></li>
+    <li><a href="#slide-51">51. Config precedence</a></li>
+    <li><a href="#slide-52">52. Modify config</a></li>
+
+    <li><a class="section" href="#sec-7">7 · Retention &amp; Storage</a></li>
+    <li><a href="#slide-53">53. Section header</a></li>
+    <li><a href="#slide-54">54. Two policies</a></li>
+    <li><a href="#slide-55">55. Time retention</a></li>
+    <li><a href="#slide-56">56. Size retention</a></li>
+    <li><a href="#slide-57">57. Segments</a></li>
+    <li><a href="#slide-58">58. Compaction</a></li>
+    <li><a href="#slide-59">59. Tombstones</a></li>
+    <li><a href="#slide-60">60. Size handshake</a></li>
+
+    <li><a class="section" href="#sec-8">8 · Partition Growth</a></li>
+    <li><a href="#slide-61">61. Section header</a></li>
+    <li><a href="#slide-62">62. Add partitions</a></li>
+    <li><a href="#slide-63">63. Can't shrink</a></li>
+    <li><a href="#slide-64">64. Reassignment</a></li>
+    <li><a href="#slide-65">65. Throttling</a></li>
+
+    <li><a class="section" href="#sec-9">9 · Delete &amp; Governance</a></li>
+    <li><a href="#slide-66">66. Section header</a></li>
+    <li><a href="#slide-67">67. Delete safeguards</a></li>
+    <li><a href="#slide-68">68. Not a backup</a></li>
+    <li><a href="#slide-69">69. Internal topics</a></li>
+    <li><a href="#slide-70">70. Auto-create trap</a></li>
+
+    <li><a class="section" href="#sec-10">10 · Monitoring</a></li>
+    <li><a href="#slide-71">71. Section header</a></li>
+    <li><a href="#slide-72">72. Metrics</a></li>
+    <li><a href="#slide-73">73. Health states</a></li>
+    <li><a href="#slide-74">74. URP triage</a></li>
+    <li><a href="#slide-75">75. Skew types</a></li>
+    <li><a href="#slide-76">76. Common mistakes</a></li>
+
+    <li><a class="section" href="#sec-11">11 · Wrap-up</a></li>
+    <li><a href="#slide-77">77. Section header</a></li>
+    <li><a href="#slide-78">78. Design review</a></li>
+    <li><a href="#slide-79">79. Change runbook</a></li>
+    <li><a href="#slide-80">80. Key takeaways</a></li>
+    <li><a href="#slide-81">81. Closer</a></li>
+    <li><a href="#slide-82">82. References</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<!-- ============================================================= BOOK HEADER -->
+<div class="book-header">
+  <div class="subtitle">Trainer's guide</div>
+  <h1>Kafka Topics · Deep-Dive<br>Speaker Notes</h1>
+  <p>Cues per slide: what to say, what to poll the room, what to watch for, what to skip.
+  Companion to <code>slides.html</code>. Open side-by-side on your laptop while the projector shows the main deck.</p>
+  <ul>
+    <li>Blue block <strong>Say</strong> — narration cues</li>
+    <li>Purple block <strong>Poll</strong> — questions to ask the room; italics = expected wrong answer</li>
+    <li>Yellow block <strong>Watch</strong> — misconceptions or gotchas to correct</li>
+    <li>Green block <strong>Demo</strong> — live-terminal actions or references to lab scenarios</li>
+    <li>Dashed line at the end of each card = transition to next slide</li>
+  </ul>
+  <p style="margin-top:10px"><strong>Time budget:</strong> ~50 min narration + pauses for four hands-on scenarios (~15 min each) + Q&amp;A ≈ 2.5 hours total.</p>
+</div>
+
+<!-- ============================================================= SECTION 1 -->
+<h2 class="section-header" id="sec-1"><span class="n">Section 1</span>Introduction</h2>
+
+<article class="slide-notes" id="slide-1">
+  <div class="slide-title"><span class="num">01</span><span class="kicker">Cover</span><h3>Kafka Topics — Deep-Dive</h3></div>
+  <div class="synopsis">Title slide · running example <code>orders.events</code></div>
+  <div class="block say"><h4>Say</h4>
+    <p>"In the next 2-3 hours we'll go deep on the ONE thing Kafka admins spend most of their day operating on — <em>topics</em>."</p>
+    <p>"Every other admin concept — replication, retention, security — ultimately configures or operates on a topic."</p>
+    <p>"We'll use <code>orders.events</code> as a running example. Every design decision we make will apply to it."</p>
+  </div>
+  <div class="transition">→ Learning objectives (what they'll walk away with)</div>
+</article>
+
+<article class="slide-notes" id="slide-2">
+  <div class="slide-title"><span class="num">02</span><span class="kicker">Objectives</span><h3>What you'll walk away with</h3></div>
+  <div class="synopsis">6-item checklist of outcomes</div>
+  <div class="block say"><h4>Say</h4>
+    <p>Read each bullet once. Don't linger — this is the "here's what we're doing" agenda, not the content itself.</p>
+    <p>"By the end, you'll be able to <em>defend</em> a partition count decision with math, not vibes."</p>
+  </div>
+  <div class="transition">→ Why topics matter (stakes)</div>
+</article>
+
+<article class="slide-notes" id="slide-3">
+  <div class="slide-title"><span class="num">03</span><span class="kicker">Stakes</span><h3>What one topic decision controls</h3></div>
+  <div class="synopsis">7 badges + red callout on long-term impact</div>
+  <div class="block say"><h4>Say</h4>
+    <p>Point at each badge as you read it — visual anchor.</p>
+    <p>"Every one of these is a knob you tune when you create the topic. And most of these you can't cleanly change later."</p>
+    <p>"Partition count and replication factor especially — get them wrong, and you're either living with it or doing a full data migration."</p>
+  </div>
+  <div class="block watch"><h4>Watch</h4>
+    <p>Students sometimes think "we'll fix it later". The red callout is the whole point: <strong>topics are permanent commitments</strong>.</p>
+  </div>
+  <div class="transition">→ Section 2: Running Scenario</div>
+</article>
+
+<!-- ============================================================= SECTION 2 -->
+<h2 class="section-header" id="sec-2"><span class="n">Section 2</span>Running Scenario</h2>
+
+<article class="slide-notes" id="slide-4">
+  <div class="slide-title"><span class="num">04</span><span class="kicker">Section header</span><h3>Running Scenario</h3></div>
+  <div class="synopsis">Gradient section divider</div>
+  <div class="block say"><h4>Say</h4>
+    <p>Just a beat — say "OK, let's set up the example we'll use all afternoon."</p>
+  </div>
+  <div class="transition">→ orders.events requirements</div>
+</article>
+
+<article class="slide-notes" id="slide-5">
+  <div class="slide-title"><span class="num">05</span><span class="kicker">Scenario</span><h3>orders.events — the e-commerce topic</h3></div>
+  <div class="synopsis">6 event types + 5 admin requirements</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"E-commerce order lifecycle — six different events. We'll publish all of them to <em>one</em> topic. Why? Because the events are related and share consumers."</p>
+    <p>"Read the requirements out loud. Notice they mix <strong>durability</strong>, <strong>availability</strong>, and <strong>scalability</strong> — all three drive different config decisions."</p>
+  </div>
+  <div class="block poll"><h4>Poll</h4>
+    <p>"Should we put all 6 event types in one topic — or one topic per event type?" <em>(Trainees often say "separate them for schema clarity" — the correct trade-off is "same topic when consumers overlap; separate when lifecycles differ".)</em></p>
+  </div>
+  <div class="transition">→ Section 3: what IS a topic anyway?</div>
+</article>
+
+<!-- ============================================================= SECTION 3 -->
+<h2 class="section-header" id="sec-3"><span class="n">Section 3</span>Topic Anatomy</h2>
+
+<article class="slide-notes" id="slide-6">
+  <div class="slide-title"><span class="num">06</span><span class="kicker">Section header</span><h3>Topic Anatomy</h3></div>
+  <div class="synopsis">Divider</div>
+  <div class="block say"><h4>Say</h4><p>"Foundation first — what a topic actually IS. Ten minutes on this, then we go deep on sizing."</p></div>
+</article>
+
+<article class="slide-notes" id="slide-7">
+  <div class="slide-title"><span class="num">07</span><span class="kicker">Concept</span><h3>A topic is a named, append-only stream</h3></div>
+  <div class="synopsis">Big highlighted <code>orders.events</code></div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Applications know the <em>name</em>. Kafka stores the <em>data</em> as partitions. The topic name is just a label the cluster maps to physical storage."</p>
+    <p>"Append-only means you write, never modify. That constraint is what makes replication, compaction, and offset tracking possible."</p>
+  </div>
+  <div class="transition">→ Partitions (the actual storage)</div>
+</article>
+
+<article class="slide-notes" id="slide-8">
+  <div class="slide-title"><span class="num">08</span><span class="kicker">Partitions</span><h3>A topic is divided into partitions</h3></div>
+  <div class="synopsis">3 partition boxes + 3-bullet properties + big takeaway</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Each partition is an <em>independent</em> ordered log. Different partitions can live on different brokers."</p>
+    <p>"Point at the boxes: partitions 0, 1, 2 — each has its OWN offset sequence starting at 0. Offset 5 in P0 is a totally different record than offset 5 in P1."</p>
+  </div>
+  <div class="block watch"><h4>Watch</h4>
+    <p>Common confusion: students think "offset 100" is a global position in the topic. It's not — offsets are per-partition.</p>
+  </div>
+  <div class="transition">→ Offsets in detail</div>
+</article>
+
+<article class="slide-notes" id="slide-9">
+  <div class="slide-title"><span class="num">09</span><span class="kicker">Offsets</span><h3>An offset is a position inside one partition</h3></div>
+  <div class="synopsis">Notation slide: <code>orders.events-2 @ 1057</code></div>
+  <div class="block say"><h4>Say</h4>
+    <p>"This notation — topic-partition@offset — is standard. If your monitoring or logs use it, you know exactly which record they're pointing to."</p>
+    <p>"Monotonically increasing means the next record always gets offset+1. Even if that record is deleted later, the offset itself is never reused."</p>
+  </div>
+  <div class="block watch"><h4>Watch</h4>
+    <p>"Deleted records can create unavailable historical ranges" — meaning after retention deletes segment 0-999, offsets 0-999 return "out of range" but offsets 1000+ still work. Consumers must handle this.</p>
+  </div>
+  <div class="transition">→ Record structure</div>
+</article>
+
+<article class="slide-notes" id="slide-10">
+  <div class="slide-title"><span class="num">10</span><span class="kicker">Records</span><h3>What a record carries</h3></div>
+  <div class="synopsis">Two cards: payload vs positioning</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Left card = things YOU set (payload). Right card = things Kafka assigns (positioning)."</p>
+    <p>"Headers are a KEY-VALUE map — often overlooked. Great for trace-ids, tenant tags, retry counts. Not part of the payload, not part of the key."</p>
+  </div>
+  <div class="transition">→ Ordering guarantees</div>
+</article>
+
+<article class="slide-notes" id="slide-11">
+  <div class="slide-title"><span class="num">11</span><span class="kicker">Ordering</span><h3>Ordering guarantee</h3></div>
+  <div class="synopsis">Green ✓ card + Red ✕ card + Design rule callout</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"The single most important sentence in Kafka: <strong>Kafka guarantees ordering within a partition, never across partitions.</strong>"</p>
+    <p>"For our scenario: to keep events for one order ordered, they MUST all land in the same partition. That's what the key does."</p>
+  </div>
+  <div class="block poll"><h4>Poll</h4>
+    <p>"If I don't set a key, will my events be ordered?" <em>(Trainees say yes / no with equal split. Answer: within a partition, yes. Across partitions, no. So without a key, events for order X may split across partitions and lose their relative order.)</em></p>
+  </div>
+  <div class="transition">→ How the partitioner picks a partition</div>
+</article>
+
+<article class="slide-notes" id="slide-12">
+  <div class="slide-title"><span class="num">12</span><span class="kicker">Partitioner</span><h3>How a producer picks a partition</h3></div>
+  <div class="synopsis">3-step numbered flow + formula + admin implication callout</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Three cases in order of priority: explicit → key → default. Most apps hit case 2 (key)."</p>
+    <p>"Draw attention to the formula: <code>hash(key) mod partitionCount</code>. This is the piece that will bite us later when we grow partitions."</p>
+  </div>
+  <div class="block watch"><h4>Watch</h4>
+    <p>The "sticky" partitioner (case 3, no key) BATCHES records to one partition for throughput. It's not round-robin per record.</p>
+  </div>
+  <div class="transition">→ Hot partition problem</div>
+</article>
+
+<article class="slide-notes" id="slide-13">
+  <div class="slide-title"><span class="num">13</span><span class="kicker">Hot partition</span><h3>The hot partition problem</h3></div>
+  <div class="synopsis">Visual: P0 = 1k/s, <em>P1 = 50k/s hot</em>, P2 = 1k/s + causes + symptoms + danger callout</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Point at the red P1 box. This is what a hot partition LOOKS like — 50x the other partitions."</p>
+    <p>"Causes are almost always the key strategy — either low cardinality or one whale customer."</p>
+  </div>
+  <div class="block poll"><h4>Poll</h4>
+    <p>"If I have a hot partition, will adding more partitions help?" <em>(Trainees usually say yes. Answer: no, unless it fixes the key distribution.)</em></p>
+  </div>
+  <div class="block watch"><h4>Watch</h4>
+    <p>This is the "trap" that leads into the whole partition-count section. The message is: <strong>math first, growth second, key strategy always</strong>.</p>
+  </div>
+  <div class="transition">→ Section 4: Choosing partition count (the deep section)</div>
+</article>
+
+<!-- ============================================================= SECTION 4 -->
+<h2 class="section-header" id="sec-4"><span class="n">Section 4</span>Choosing Partition Count</h2>
+
+<article class="slide-notes" id="slide-14">
+  <div class="slide-title"><span class="num">14</span><span class="kicker">Section header</span><h3>Choosing Partition Count</h3></div>
+  <div class="synopsis">Divider — "the one decision you can't cleanly undo"</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"This is the biggest section — 22 slides. Take a breath, we're going deep."</p>
+    <p>"Two things to remember before we start: (1) you can INCREASE partitions but never DECREASE, (2) the math is straightforward but must be done for each real workload."</p>
+  </div>
+</article>
+
+<article class="slide-notes" id="slide-15">
+  <div class="slide-title"><span class="num">15</span><span class="kicker">5 dimensions</span><h3>Five dimensions of the decision</h3></div>
+  <div class="synopsis">5 numbered badges + takeaway</div>
+  <div class="block say"><h4>Say</h4>
+    <p>Read each dimension. Emphasize the takeaway: <em>"There's no universal correct number."</em></p>
+    <p>"If someone tells you 'always create N partitions', they're guessing. We're going to teach you to calculate."</p>
+  </div>
+  <div class="transition">→ Inputs to measure first</div>
+</article>
+
+<article class="slide-notes" id="slide-16">
+  <div class="slide-title"><span class="num">16</span><span class="kicker">Inputs</span><h3>Measure first, calculate second</h3></div>
+  <div class="synopsis">Table of 8 inputs with example values</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"You can't do the math without these numbers. If a workload team asks 'how many partitions?' and can't tell you their peak byte rate, send them back to measure first."</p>
+    <p>"Note: <strong>peak</strong>, not average. Kafka sizing is capacity planning — you size for the burst."</p>
+  </div>
+  <div class="block watch"><h4>Watch</h4>
+    <p>"Serialized" size — students often use JSON blob size mentally. Actual bytes on the wire depend on compression and format (Avro/Protobuf smaller than JSON).</p>
+  </div>
+  <div class="transition">→ First formula: write side</div>
+</article>
+
+<article class="slide-notes" id="slide-17">
+  <div class="slide-title"><span class="num">17</span><span class="kicker">Formula</span><h3>P_write formula</h3></div>
+  <div class="synopsis">Big centered formula (peak ingress / safe MB/s per partition)</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Peak ingress on top. Safe write per partition on the bottom. Result is partitions needed for the WRITE side alone."</p>
+    <p>"'Safe' means the rate at which the broker responds within your latency SLO, replication is stable, no ISR flapping. Not the burst rate that eventually kills things."</p>
+  </div>
+  <div class="transition">→ Example applied</div>
+</article>
+
+<article class="slide-notes" id="slide-18">
+  <div class="slide-title"><span class="num">18</span><span class="kicker">Example · write</h3><h3>P_write worked example</h3></div>
+  <div class="synopsis">120 ÷ 15 = 8 partitions</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Given box on top. Formula in the middle. Result: 8 partitions."</p>
+    <p>"The 15 MB/s number came from a real benchmark on OUR hardware. Not from a blog post."</p>
+  </div>
+  <div class="block watch"><h4>Watch</h4>
+    <p>Trainees ask "what if we don't have benchmark data?" Answer: use the <code>kafka-producer-perf-test.sh</code> tool on your cluster. See Sc 6.2 (quotas lab) for a working example, or dedicate an hour to it. Real numbers &gt;&gt; blog numbers.</p>
+  </div>
+  <div class="transition">→ Read side formula</div>
+</article>
+
+<article class="slide-notes" id="slide-19">
+  <div class="slide-title"><span class="num">19</span><span class="kicker">Formula</span><h3>P_read formula</h3></div>
+  <div class="synopsis">Big formula (group throughput / safe MB/s per consumer instance)</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Same shape, but now we care about the CONSUMER'S bottleneck."</p>
+    <p>"Take the group with the WORST per-instance throughput — usually fraud detection, ML models, or anything with external calls."</p>
+  </div>
+  <div class="transition">→ Example</div>
+</article>
+
+<article class="slide-notes" id="slide-20">
+  <div class="slide-title"><span class="num">20</span><span class="kicker">Example · read</span><h3>P_read worked example</h3></div>
+  <div class="synopsis">120 ÷ 10 = 12 partitions</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Fraud detection can only process 10 MB/s per instance. Need to process 120 MB/s total. Therefore 12 consumers, therefore at least 12 partitions."</p>
+  </div>
+  <div class="transition">→ Take the max</div>
+</article>
+
+<article class="slide-notes" id="slide-21">
+  <div class="slide-title"><span class="num">21</span><span class="kicker">The rule</span><h3>Take the maximum</h3></div>
+  <div class="synopsis">max(P_write, P_read, concurrency) = 12</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Write side wanted 8. Read side wanted 12. We take 12 — it satisfies both."</p>
+    <p>"The 'concurrency' term catches the case where you want to run N consumers per group for redundancy, even if throughput doesn't require it."</p>
+  </div>
+  <div class="transition">→ Consumer parallelism rule</div>
+</article>
+
+<article class="slide-notes" id="slide-22">
+  <div class="slide-title"><span class="num">22</span><span class="kicker">Parallelism</span><h3>Consumers per group ≤ partitions</h3></div>
+  <div class="synopsis">Table showing 4 / 12 / 16 consumers on 12 partitions</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Third row is the punchline: <strong>16 consumers on 12 partitions = 4 idle consumers</strong>."</p>
+    <p>"You can't have more active consumers in a group than there are partitions. Extra consumers sit idle waiting for a rebalance."</p>
+  </div>
+  <div class="block watch"><h4>Watch</h4>
+    <p>The callout is important: multiple CONSUMER GROUPS don't share this limit. Group A can have 12 consumers reading, Group B another 12, independently.</p>
+  </div>
+  <div class="transition">→ How multiple groups multiply the READ load</div>
+</article>
+
+<article class="slide-notes" id="slide-23">
+  <div class="slide-title"><span class="num">23</span><span class="kicker">Multiple groups</span><h3>Read load × groups</h3></div>
+  <div class="synopsis">120 MB/s × 4 groups = 480 MB/s of reads</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Ingress is 120 MB/s. But four consumer groups each read the whole thing. Cluster sees 480 MB/s of reads on top of the writes."</p>
+    <p>"Partition count decision must consider broker network AND disk read capacity — not just ingress."</p>
+  </div>
+  <div class="transition">→ Record rate vs byte rate</div>
+</article>
+
+<article class="slide-notes" id="slide-24">
+  <div class="slide-title"><span class="num">24</span><span class="kicker">Rate types</span><h3>Record rate vs byte rate</h3></div>
+  <div class="synopsis">Two workloads: 100k×1KB vs 1k×100KB — same MB/s, different pressure</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Both workloads are 100 MB/s. But they stress Kafka completely differently."</p>
+    <p>"High record rate = per-record overhead dominates. Large records = memory and fetch-size pressure."</p>
+    <p>"Always benchmark with your ACTUAL record shape."</p>
+  </div>
+  <div class="transition">→ Compression affects the math</div>
+</article>
+
+<article class="slide-notes" id="slide-25">
+  <div class="slide-title"><span class="num">25</span><span class="kicker">Compression</span><h3>Compression changes MB/s</h3></div>
+  <div class="synopsis">200 MB/s / 2.5 = 80 MB/s + 6 factors that affect it</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Compression looks like a free win but ratio depends on your data. Uniform JSON compresses great. Already-compressed images don't compress at all."</p>
+    <p>"Test with realistic data. The blog promises 4:1 with zstd; your actual traffic might get 1.5:1."</p>
+  </div>
+  <div class="transition">→ Replication also multiplies</div>
+</article>
+
+<article class="slide-notes" id="slide-26">
+  <div class="slide-title"><span class="num">26</span><span class="kicker">RF multiplier</span><h3>Replication multiplies internal traffic</h3></div>
+  <div class="synopsis">Ingress × RF ≈ cluster write traffic (120 × 3 = 360 MB/s)</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Every byte you produce becomes RF bytes on the internal replication network."</p>
+    <p>"With RF=3, cluster sees 3x the ingress in wire traffic. Plus consumer fetch traffic on top. This is what your NIC actually carries."</p>
+  </div>
+  <div class="transition">→ Broker distribution check</div>
+</article>
+
+<article class="slide-notes" id="slide-27">
+  <div class="slide-title"><span class="num">27</span><span class="kicker">Distribution</span><h3>Does the count fit the cluster?</h3></div>
+  <div class="synopsis">12 partitions × RF 3 on 6 brokers = 6 replicas/broker, 2 leaders/broker</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Simple arithmetic sanity check — did I pick a partition count that DIVIDES nicely across brokers?"</p>
+    <p>"But note the callout: this is COUNT balance. Real balance requires byte size, traffic, and rack placement checks too."</p>
+  </div>
+  <div class="transition">→ Storage sizing</div>
+</article>
+
+<article class="slide-notes" id="slide-28">
+  <div class="slide-title"><span class="num">28</span><span class="kicker">Storage</span><h3>How much disk will this cost?</h3></div>
+  <div class="synopsis">Primary = ingress × retention; Replicated = primary × RF (12.1 TB → 36.3 TB)</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Two formulas stacked. Primary = one copy. Replicated = ×RF."</p>
+    <p>"36 TB isn't the disk you buy — it's before you add operational headroom, index files, protocol overhead, and 30% safety."</p>
+  </div>
+  <div class="transition">→ Per-partition size (recovery constraint)</div>
+</article>
+
+<article class="slide-notes" id="slide-29">
+  <div class="slide-title"><span class="num">29</span><span class="kicker">Per-partition size</span><h3>Average partition size matters</h3></div>
+  <div class="synopsis">Table: 6 vs 12 vs 24 partitions with resulting size</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Same 12 TB, different partition counts. 24 partitions = 500 GB each. 6 partitions = 2 TB each."</p>
+    <p>"Big partitions are slow to recover after a failure. Small partitions multiply file handles."</p>
+  </div>
+  <div class="transition">→ Recovery time constraint</div>
+</article>
+
+<article class="slide-notes" id="slide-30">
+  <div class="slide-title"><span class="num">30</span><span class="kicker">Recovery</span><h3>Recovery-time constraint</h3></div>
+  <div class="synopsis">500 GB / 50 MB/s = 2.8 h</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"When a broker fails and comes back, the failed replica must be re-fetched from the leader. This is your Recovery Time."</p>
+    <p>"2.8 hours is theoretical. Real recovery is slower because production traffic + multiple replicas share the same disk and NIC."</p>
+  </div>
+  <div class="block poll"><h4>Poll</h4>
+    <p>"If your recovery objective is 30 minutes, is 500 GB per partition acceptable?" <em>(Answer: no. Either shrink partitions or accept longer recovery.)</em></p>
+  </div>
+  <div class="transition">→ Growth headroom</div>
+</article>
+
+<article class="slide-notes" id="slide-31">
+  <div class="slide-title"><span class="num">31</span><span class="kicker">Growth</span><h3>Growth headroom</h3></div>
+  <div class="synopsis">12 × 1.4 = 16.8 → round to 18</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Add expected growth. 40% annual = plan for 40% more capacity than today."</p>
+    <p>"Warning callout is important: don't over-partition 'just in case'. Every partition has a cost — files, memory, controller work."</p>
+  </div>
+  <div class="transition">→ The reordering trap (why you can't just double later)</div>
+</article>
+
+<article class="slide-notes" id="slide-32">
+  <div class="slide-title"><span class="num">32</span><span class="kicker">Reordering trap</span><h3>Why you can't just double later</h3></div>
+  <div class="synopsis">hash mod 6 ≠ hash mod 12 · before/after cards showing key movement</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Here's the demo we'll do live in Scenario 12.3. Same key that lived on P3 now lives on P9 — but only for NEW records. Historical records stay on P3."</p>
+    <p>"Consequence: same key, two partitions, two consumer instances, undefined relative order. Stateful consumers rebuild wrong state."</p>
+  </div>
+  <div class="block demo"><h4>Demo</h4>
+    <p>If time permits, jump to <strong>Scenario 12.3</strong> now and show it live — the reordering is the most memorable moment of the whole class.</p>
+  </div>
+  <div class="transition">→ Key cardinality</div>
+</article>
+
+<article class="slide-notes" id="slide-33">
+  <div class="slide-title"><span class="num">33</span><span class="kicker">Cardinality</span><h3>Partitions can't fix bad keys</h3></div>
+  <div class="synopsis">Example: 24 partitions, 5 country values → 5 hot, 19 idle + better key options</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"You can have 24 partitions and 5 hot ones. Adding more partitions makes it 24 hot, 76 idle — same problem, more overhead."</p>
+    <p>"Fix the KEY, not the partition count. Higher cardinality, composite, or bucketed."</p>
+  </div>
+  <div class="transition">→ Skew safety factor</div>
+</article>
+
+<article class="slide-notes" id="slide-34">
+  <div class="slide-title"><span class="num">34</span><span class="kicker">Skew</span><h3>Design for the hottest partition</h3></div>
+  <div class="synopsis">Formula: hottest = avg × skew factor; example shows unsafe design</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Perfect distribution doesn't exist. Measure your real skew factor — busiest partition ÷ average — and use THAT as your sizing basis."</p>
+    <p>"Danger callout: total topic throughput can look fine while one partition is on fire."</p>
+  </div>
+  <div class="transition">→ When to add vs create new topic</div>
+</article>
+
+<article class="slide-notes" id="slide-35">
+  <div class="slide-title"><span class="num">35</span><span class="kicker">Add or split</span><h3>Add partitions or create a new topic?</h3></div>
+  <div class="synopsis">Two comparison cards</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Left card: when adding is the right answer. Right card: when a NEW topic is better."</p>
+    <p>"Concrete example at the bottom: orders.events (event history) vs orders.state (compacted current state). Different lifecycle = different topic."</p>
+  </div>
+  <div class="transition">→ The decision flow</div>
+</article>
+
+<article class="slide-notes" id="slide-36">
+  <div class="slide-title"><span class="num">36</span><span class="kicker">Decision flow</span><h3>The 10-step decision</h3></div>
+  <div class="synopsis">Numbered list of the whole process</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"This is the runbook. Walk through 1 to 10. Each step is what we've just covered."</p>
+    <p>"Screenshot this slide — trainees can use it as their partition-sizing checklist."</p>
+  </div>
+  <div class="transition">→ The cost of over-partitioning</div>
+</article>
+
+<article class="slide-notes" id="slide-37">
+  <div class="slide-title"><span class="num">37</span><span class="kicker">Not free</span><h3>More partitions are not free</h3></div>
+  <div class="synopsis">6-item cost list + big takeaway</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Common misconception: 'let me create it with 100 partitions so I don't have to change it later.' That's the wrong optimization."</p>
+    <p>"Each partition = files, memory, controller work, replication connections, recovery time. Follow the WORKLOAD, not a heuristic."</p>
+  </div>
+  <div class="transition">→ Section 5: Replication</div>
+</article>
+
+<!-- ============================================================= SECTION 5 -->
+<h2 class="section-header" id="sec-5"><span class="n">Section 5</span>Replication &amp; Durability</h2>
+
+<article class="slide-notes" id="slide-38">
+  <div class="slide-title"><span class="num">38</span><span class="kicker">Section header</span><h3>Replication &amp; Durability</h3></div>
+  <div class="synopsis">Divider — "Leader · Followers · ISR · min.ISR · acks"</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Now we've decided how many partitions. Next: how many COPIES of each, and what makes those copies actually protect us."</p>
+  </div>
+</article>
+
+<article class="slide-notes" id="slide-39">
+  <div class="slide-title"><span class="num">39</span><span class="kicker">RF concept</span><h3>Replication factor = number of copies</h3></div>
+  <div class="synopsis">3 brokers with leader/follower pills</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"3 partitions × RF 3 = 9 replicas total. Each partition has one leader (accepts writes) and RF-1 followers (copy from the leader)."</p>
+    <p>"Point at the visual — every broker has some leader replicas (blue) and some follower replicas (light blue). Leaders are spread across brokers for load balancing."</p>
+  </div>
+  <div class="transition">→ ISR</div>
+</article>
+
+<article class="slide-notes" id="slide-40">
+  <div class="slide-title"><span class="num">40</span><span class="kicker">ISR</span><h3>In-Sync Replicas — who's caught up</h3></div>
+  <div class="synopsis">Healthy vs degraded cards + reasons ISR shrinks</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"ISR = subset of replicas that are up-to-date with the leader. Only ISR members are eligible to become the new leader if the current leader fails."</p>
+    <p>"Read the 'why ISR shrinks' list — every one of these is a real production incident."</p>
+  </div>
+  <div class="block watch"><h4>Watch</h4>
+    <p>"GC pause" is the sneaky one. A broker in a long GC looks dead to the leader, gets kicked from ISR, then rejoins when GC completes. Chronic pattern → investigate heap tuning.</p>
+  </div>
+  <div class="transition">→ Durability triangle</div>
+</article>
+
+<article class="slide-notes" id="slide-41">
+  <div class="slide-title"><span class="num">41</span><span class="kicker">Durability</span><h3>Three knobs, one guarantee</h3></div>
+  <div class="synopsis">Three info cards: RF · min.ISR · acks + danger callout</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"THREE knobs. Any one weakened and the guarantee is broken."</p>
+    <p>"RF sets how many copies exist. min.ISR sets how many must actively confirm a write. acks tells the producer to wait for that confirmation."</p>
+    <p>"Repeat: <strong>min.ISR only matters when producer uses acks=all</strong>. Without acks=all, min.ISR is decoration."</p>
+  </div>
+  <div class="transition">→ The safety formula</div>
+</article>
+
+<article class="slide-notes" id="slide-42">
+  <div class="slide-title"><span class="num">42</span><span class="kicker">Formula</span><h3>The safety formula</h3></div>
+  <div class="synopsis">RF ≥ min.ISR + F  · table of RF/min.ISR/F combinations</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"F = how many broker failures you tolerate without producer errors."</p>
+    <p>"Table gives three RF=3 setups. The middle row (min.ISR=2) is the industry recommendation."</p>
+    <p>"Top row (min.ISR=1) means you accept writes even when there's only ONE replica alive — silent data loss risk. Bottom row (min.ISR=3) means first ISR shrink fails writes — brittle."</p>
+  </div>
+  <div class="block poll"><h4>Poll</h4>
+    <p>"Which is safer — min.ISR=2 or min.ISR=3?" <em>(Most say min.ISR=3, because "more required = more durable". Answer: min.ISR=3 is more BRITTLE — the first slow follower kills the producer. min.ISR=2 balances durability and availability.)</em></p>
+  </div>
+  <div class="transition">→ What happens on failure</div>
+</article>
+
+<article class="slide-notes" id="slide-43">
+  <div class="slide-title"><span class="num">43</span><span class="kicker">Failure</span><h3>What happens when broker 1 dies</h3></div>
+  <div class="synopsis">Broker visual with failed leader + failover sequence</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Broker 1 dies. Controller detects. Elects a follower from the ISR as new leader. Clients refresh metadata. Total client impact: seconds to tens of seconds."</p>
+    <p>"Bottom callout is the key insight: <strong>recovery quality = replication health BEFORE the failure</strong>. If ISR was already shrunk, you have fewer options."</p>
+  </div>
+  <div class="transition">→ Unclean election trade-off</div>
+</article>
+
+<article class="slide-notes" id="slide-44">
+  <div class="slide-title"><span class="num">44</span><span class="kicker">Unclean election</span><h3>Availability vs durability trade-off</h3></div>
+  <div class="synopsis">Two comparison cards: unclean=false vs unclean=true</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"When ISR is completely empty, Kafka faces a choice."</p>
+    <p>"False (default since 0.11) = wait for an ISR replica. Partition stays offline. Zero data loss. Availability &lt; durability."</p>
+    <p>"True = elect any surviving replica. Partition comes back. Data written but not yet replicated is silently lost."</p>
+  </div>
+  <div class="block watch"><h4>Watch</h4>
+    <p>Ancient clusters (pre-0.11) had default=true. Upgrades don't auto-fix. If your cluster is old, verify.</p>
+  </div>
+  <div class="transition">→ Section 6: Topic Operations</div>
+</article>
+
+<!-- ============================================================= SECTION 6 -->
+<h2 class="section-header" id="sec-6"><span class="n">Section 6</span>Topic Operations</h2>
+
+<article class="slide-notes" id="slide-45">
+  <div class="slide-title"><span class="num">45</span><span class="kicker">Section header</span><h3>Topic Operations</h3></div>
+  <div class="synopsis">Divider — "Naming · Create · Describe · Configure"</div>
+  <div class="block say"><h4>Say</h4><p>"Now the practical part — the actual commands and conventions."</p></div>
+</article>
+
+<article class="slide-notes" id="slide-46">
+  <div class="slide-title"><span class="num">46</span><span class="kicker">Naming</span><h3>Use a predictable convention</h3></div>
+  <div class="synopsis">Naming pattern formula + 3 examples + standards callout</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Pattern gives you 4 tiers: domain, entity, event-type, version. Every topic name tells you what it is at a glance."</p>
+    <p>"The bottom callout lists governance items — allowed characters, environment separation, versioning. Every org needs to write this down; don't invent per-team."</p>
+  </div>
+  <div class="transition">→ Pre-create checklist</div>
+</article>
+
+<article class="slide-notes" id="slide-47">
+  <div class="slide-title"><span class="num">47</span><span class="kicker">Checklist</span><h3>Decide BEFORE you type --create</h3></div>
+  <div class="synopsis">9-item checklist</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"This is a topic-creation review form. In production, this should be a JIRA template."</p>
+    <p>"No topic gets created without answering every one of these questions."</p>
+  </div>
+  <div class="transition">→ Create command</div>
+</article>
+
+<article class="slide-notes" id="slide-48">
+  <div class="slide-title"><span class="num">48</span><span class="kicker">Create</span><h3>Every production create is explicit</h3></div>
+  <div class="synopsis">Full create command with explicit configs</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Note every parameter is explicit. No implicit defaults. Version-control this command."</p>
+    <p>"Contrast with the auto-create trap we'll see later — that produces topics with 1 partition, RF=1, no thought."</p>
+  </div>
+  <div class="transition">→ Reading describe output</div>
+</article>
+
+<article class="slide-notes" id="slide-49">
+  <div class="slide-title"><span class="num">49</span><span class="kicker">Describe</span><h3>Read the output</h3></div>
+  <div class="synopsis">Sample describe output + healthy/warning cards</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Left card: what healthy looks like. Right card: warning signs."</p>
+    <p>"<code>Leader: -1</code> means no leader. Partition is unavailable. Immediate action needed."</p>
+    <p>"<code>ISR &lt; Replicas</code> = under-replicated. Not immediately critical but degraded."</p>
+  </div>
+  <div class="transition">→ Filters for problem partitions</div>
+</article>
+
+<article class="slide-notes" id="slide-50">
+  <div class="slide-title"><span class="num">50</span><span class="kicker">Filters</span><h3>Only show problems</h3></div>
+  <div class="synopsis">3 filter flags</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Three flags — memorize the names, use them during incidents."</p>
+    <p>"The callout matters: CLI is for one-time investigation. Real production uses Prometheus + Grafana for continuous detection (see Lab 11)."</p>
+  </div>
+  <div class="transition">→ Config precedence</div>
+</article>
+
+<article class="slide-notes" id="slide-51">
+  <div class="slide-title"><span class="num">51</span><span class="kicker">Config precedence</span><h3>Where does an effective value come from?</h3></div>
+  <div class="synopsis">4-priority table + red callout on --describe --all</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Four sources of a config value. Top wins."</p>
+    <p>"Red callout is important: <code>--describe --all</code> shows the SOURCE via the <code>synonyms=</code> list. When something doesn't behave as expected, this is the debugging output."</p>
+  </div>
+  <div class="block demo"><h4>Demo</h4>
+    <p>Live demo in <strong>Scenario 12.2</strong> — walk through creating an inherited vs override topic and showing the source chain.</p>
+  </div>
+  <div class="transition">→ Modify command</div>
+</article>
+
+<article class="slide-notes" id="slide-52">
+  <div class="slide-title"><span class="num">52</span><span class="kicker">Modify</span><h3>Change &amp; revert</h3></div>
+  <div class="synopsis">Two commands: --add-config and --delete-config</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Read both commands. Emphasize the callout: always record the previous value AND the rollback command in your change ticket."</p>
+  </div>
+  <div class="transition">→ Section 7: Retention &amp; Storage</div>
+</article>
+
+<!-- ============================================================= SECTION 7 -->
+<h2 class="section-header" id="sec-7"><span class="n">Section 7</span>Retention, Compaction &amp; Storage</h2>
+
+<article class="slide-notes" id="slide-53">
+  <div class="slide-title"><span class="num">53</span><span class="kicker">Section header</span><h3>Retention, Compaction &amp; Storage</h3></div>
+  <div class="synopsis">Divider</div>
+  <div class="block say"><h4>Say</h4><p>"How data leaves your topic. Two policies, several knobs each."</p></div>
+</article>
+
+<article class="slide-notes" id="slide-54">
+  <div class="slide-title"><span class="num">54</span><span class="kicker">Policies</span><h3>Compare the two cleanup policies</h3></div>
+  <div class="synopsis">Three cards: delete · compact · compact+delete</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Delete = time / size based, removes old segments wholesale. Event history use case."</p>
+    <p>"Compact = keeps latest value per key. Current-state use case. REQUIRES keys."</p>
+    <p>"Combined = compact keeps latest per key + delete removes very old segments."</p>
+  </div>
+  <div class="transition">→ Time-based retention</div>
+</article>
+
+<article class="slide-notes" id="slide-55">
+  <div class="slide-title"><span class="num">55</span><span class="kicker">Time retention</span><h3>Retention operates on segments</h3></div>
+  <div class="synopsis"><code>retention.ms=604800000</code> + red trap callout</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"7 days in milliseconds. Every retention config uses ms."</p>
+    <p>"RED TRAP: retention deletes whole SEGMENTS, not individual messages. The active segment is never eligible. Data can outlive retention.ms by up to segment.ms."</p>
+  </div>
+  <div class="block poll"><h4>Poll</h4>
+    <p>"If I set <code>retention.ms=1000</code> (1 second), does data get deleted after 1 second?" <em>(Most say yes. Answer: only rolled segments older than 1s. Active segment persists indefinitely.)</em></p>
+  </div>
+  <div class="transition">→ Size-based retention</div>
+</article>
+
+<article class="slide-notes" id="slide-56">
+  <div class="slide-title"><span class="num">56</span><span class="kicker">Size retention</span><h3>Per-partition, not per-topic</h3></div>
+  <div class="synopsis">Formula: retention.bytes × P × RF</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"retention.bytes limits PER PARTITION. For a 6-partition RF=3 topic with 1 GB retention.bytes, actual footprint is ~18 GB."</p>
+    <p>"Warning callout: high-volume periods shorten the effective time window. Use time OR size — reasoning about both is hard."</p>
+  </div>
+  <div class="transition">→ Segments in detail</div>
+</article>
+
+<article class="slide-notes" id="slide-57">
+  <div class="slide-title"><span class="num">57</span><span class="kicker">Segments</span><h3>The unit that gets deleted or compacted</h3></div>
+  <div class="synopsis">Visual: 3 segment boxes, first two rolled, third active</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Segments roll on size OR time — whichever hits first. Point at the visual: last box is ACTIVE, immune to retention."</p>
+  </div>
+  <div class="block demo"><h4>Demo</h4>
+    <p>Live demo in <strong>Scenario 12.1</strong> — show the actual segment files (<code>.log</code>, <code>.index</code>, <code>.timeindex</code>) in the broker's data dir.</p>
+  </div>
+  <div class="transition">→ Compaction</div>
+</article>
+
+<article class="slide-notes" id="slide-58">
+  <div class="slide-title"><span class="num">58</span><span class="kicker">Compaction</span><h3>Latest value per key wins</h3></div>
+  <div class="synopsis">Before/after cards showing C101 → Gold winning</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"C101 got updated twice. After compaction, only the latest value remains."</p>
+    <p>"Bullets under the cards are important: async (not immediate), keys mandatory, offsets preserved (holes are OK)."</p>
+  </div>
+  <div class="transition">→ Tombstones</div>
+</article>
+
+<article class="slide-notes" id="slide-59">
+  <div class="slide-title"><span class="num">59</span><span class="kicker">Tombstones</span><h3>Delete a key with a null value</h3></div>
+  <div class="synopsis"><code>C101 → null</code> + red danger callout</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"To delete a logical key from a compacted topic, publish a record with the key and null value. That's the tombstone."</p>
+    <p>"Cleaner removes older records for that key. Tombstone itself lives 24h by default so downstream consumers can see the deletion."</p>
+    <p>"DANGER: consumers offline longer than the tombstone window MISS the delete and rebuild wrong state."</p>
+  </div>
+  <div class="transition">→ Five-layer message size handshake</div>
+</article>
+
+<article class="slide-notes" id="slide-60">
+  <div class="slide-title"><span class="num">60</span><span class="kicker">Size handshake</span><h3>Five layers must agree</h3></div>
+  <div class="synopsis">Table of 5 settings across producer/broker/topic/replication/consumer + danger callout</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Five layers. Strictest wins. Change one, forget the others, cascading errors."</p>
+    <p>"Full demo in Scenario 12.4 — we produce, get an error, fix one layer, produce again, get a DIFFERENT error, fix the next layer, and so on."</p>
+  </div>
+  <div class="block demo"><h4>Demo</h4>
+    <p>Live: <strong>Scenario 12.4 Part A</strong> — 5-step cascade with actual error messages.</p>
+  </div>
+  <div class="transition">→ Section 8: Partition Growth</div>
+</article>
+
+<!-- ============================================================= SECTION 8 -->
+<h2 class="section-header" id="sec-8"><span class="n">Section 8</span>Partition Growth &amp; Reassignment</h2>
+
+<article class="slide-notes" id="slide-61">
+  <div class="slide-title"><span class="num">61</span><span class="kicker">Section header</span><h3>Partition Growth &amp; Reassignment</h3></div>
+  <div class="synopsis">Divider</div>
+  <div class="block say"><h4>Say</h4><p>"The one-way ratchet: add is easy, shrink is impossible."</p></div>
+</article>
+
+<article class="slide-notes" id="slide-62">
+  <div class="slide-title"><span class="num">62</span><span class="kicker">Add</span><h3>Command is easy — impact is not</h3></div>
+  <div class="synopsis">--alter --partitions command + 4-item x-list of consequences</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"The command is one line. The consequences are 4 bullets long — read each aloud."</p>
+    <p>"Danger callout: application-visible. Coordinate with the app team; don't do this behind their back."</p>
+  </div>
+  <div class="transition">→ Can't shrink</div>
+</article>
+
+<article class="slide-notes" id="slide-63">
+  <div class="slide-title"><span class="num">63</span><span class="kicker">Can't shrink</span><h3>One-way ratchet</h3></div>
+  <div class="synopsis">Error message + 4-step migration workaround</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Read the error out loud. This is the most quoted-by-consultants Kafka error."</p>
+    <p>"If you MUST reduce partitions: create new topic, MirrorMaker 2 the data, switch consumers, delete old. Weeks-long migration."</p>
+  </div>
+  <div class="transition">→ Reassignment</div>
+</article>
+
+<article class="slide-notes" id="slide-64">
+  <div class="slide-title"><span class="num">64</span><span class="kicker">Reassignment</span><h3>Used for</h3></div>
+  <div class="synopsis">5-item use case list + 5-phase workflow</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Reassignment MOVES replicas between brokers. Different from adding partitions."</p>
+    <p>"Use cases: adding a broker, decommissioning, rebalancing, moving between log directories, or CHANGING RF."</p>
+  </div>
+  <div class="transition">→ Throttling</div>
+</article>
+
+<article class="slide-notes" id="slide-65">
+  <div class="slide-title"><span class="num">65</span><span class="kicker">Throttling</span><h3>Don't self-DoS</h3></div>
+  <div class="synopsis">--throttle 50000000 + trade-off cards + verify warning</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Reassignment moves LOTS of bytes. Without throttling, it saturates the NIC and your producers/consumers slow down."</p>
+    <p>"Danger callout is critical: ALWAYS <code>--verify</code>. It removes the throttle configs when done. Skip verify → throttles stay set forever → chronically slow followers."</p>
+  </div>
+  <div class="block demo"><h4>Demo</h4>
+    <p>Full walkthrough in <strong>Lab 5.2</strong> (Partition Reassignment). Reference back to that if trainees haven't done it.</p>
+  </div>
+  <div class="transition">→ Section 9: Delete &amp; Governance</div>
+</article>
+
+<!-- ============================================================= SECTION 9 -->
+<h2 class="section-header" id="sec-9"><span class="n">Section 9</span>Delete, Backup &amp; Governance</h2>
+
+<article class="slide-notes" id="slide-66">
+  <div class="slide-title"><span class="num">66</span><span class="kicker">Section header</span><h3>Delete, Backup &amp; Governance</h3></div>
+  <div class="synopsis">Divider</div>
+  <div class="block say"><h4>Say</h4><p>"The dangerous operations. And the fact that Kafka replication is not a backup."</p></div>
+</article>
+
+<article class="slide-notes" id="slide-67">
+  <div class="slide-title"><span class="num">67</span><span class="kicker">Delete safeguards</span><h3>Deletion is destructive</h3></div>
+  <div class="synopsis">6-item checklist</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Read the checklist. Every item is a real incident somebody has hit."</p>
+    <p>"Danger callout: NEVER use shell patterns like <code>--topic 'test.*'</code> in production. Real story: a `.*` pattern caught the production topic that also matched. Full outage."</p>
+  </div>
+  <div class="transition">→ Not a backup</div>
+</article>
+
+<article class="slide-notes" id="slide-68">
+  <div class="slide-title"><span class="num">68</span><span class="kicker">Not a backup</span><h3>Replication ≠ backup</h3></div>
+  <div class="synopsis">5-item x-list of things replication doesn't protect against</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Replication protects against broker failure. That's ALL it protects against."</p>
+    <p>"Everything on the x-list happens 3x when you have RF=3 — the corrupt data, the delete, the wrong config all get replicated too."</p>
+    <p>"Real DR needs cross-cluster replication (see Lab 9) OR immutable downstream storage OR both."</p>
+  </div>
+  <div class="transition">→ Internal topics</div>
+</article>
+
+<article class="slide-notes" id="slide-69">
+  <div class="slide-title"><span class="num">69</span><span class="kicker">Internal topics</span><h3>Kafka's own topics — protect them</h3></div>
+  <div class="synopsis">4-item list + danger callout</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"<code>__consumer_offsets</code>, <code>__transaction_state</code>, Connect internals, Streams changelogs — Kafka creates and manages these."</p>
+    <p>"Deleting them breaks the platform. Monitor them like production topics."</p>
+  </div>
+  <div class="transition">→ Auto-create trap</div>
+</article>
+
+<article class="slide-notes" id="slide-70">
+  <div class="slide-title"><span class="num">70</span><span class="kicker">Auto-create trap</span><h3>The silent shadow-topic problem</h3></div>
+  <div class="synopsis">Scenario example: typo → auto-created with 1 partition RF=1 + two mitigation cards</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"App misconfigured — sends to <code>order.events</code> (typo) instead of <code>orders.events</code>. Kafka silently creates it with default settings: 1 partition, RF=1, no thought."</p>
+    <p>"Left card: production posture — disable auto-create, enforce via ACLs, provision via automation. Right card: detection — weekly audits, alerts on new topics."</p>
+  </div>
+  <div class="block demo"><h4>Demo</h4>
+    <p><strong>Scenario 12.4 Part B</strong> — reproduce the typo, watch the topic auto-appear, inspect the bad defaults.</p>
+  </div>
+  <div class="transition">→ Section 10: Monitoring</div>
+</article>
+
+<!-- ============================================================= SECTION 10 -->
+<h2 class="section-header" id="sec-10"><span class="n">Section 10</span>Monitoring &amp; Troubleshooting</h2>
+
+<article class="slide-notes" id="slide-71">
+  <div class="slide-title"><span class="num">71</span><span class="kicker">Section header</span><h3>Monitoring &amp; Troubleshooting</h3></div>
+  <div class="synopsis">Divider</div>
+  <div class="block say"><h4>Say</h4><p>"How to know when things go wrong, and how to investigate."</p></div>
+</article>
+
+<article class="slide-notes" id="slide-72">
+  <div class="slide-title"><span class="num">72</span><span class="kicker">Metrics</span><h3>The topic-level signals</h3></div>
+  <div class="synopsis">3 cards: Availability · Health · Throughput metrics</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Three categories of signal. Availability = 'can I use this partition at all'. Health = 'is redundancy intact'. Throughput = 'is it healthy under load'."</p>
+    <p>"All of these are exposed via JMX and picked up by Lab 2's Prometheus setup."</p>
+  </div>
+  <div class="transition">→ Health states</div>
+</article>
+
+<article class="slide-notes" id="slide-73">
+  <div class="slide-title"><span class="num">73</span><span class="kicker">States</span><h3>Four states to distinguish</h3></div>
+  <div class="synopsis">Table: Healthy · Degraded · At min.ISR · Offline</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Four progressive states from healthy to offline. Point at 'At min.ISR' — that's the ALERT threshold. One more failure = producer errors."</p>
+    <p>"Warning callout: don't wait for offline. Under-replicated is the early warning system."</p>
+  </div>
+  <div class="transition">→ URP triage steps</div>
+</article>
+
+<article class="slide-notes" id="slide-74">
+  <div class="slide-title"><span class="num">74</span><span class="kicker">URP triage</span><h3>Under-replicated — investigate</h3></div>
+  <div class="synopsis">8-step numbered investigation + danger callout on leader elections</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Walk down the list. Each step rules out or confirms a cause. Do NOT skip steps."</p>
+    <p>"Danger callout: don't force leader elections until you understand replica freshness. Forcing an out-of-sync replica to become leader = data loss."</p>
+  </div>
+  <div class="transition">→ Different kinds of skew</div>
+</article>
+
+<article class="slide-notes" id="slide-75">
+  <div class="slide-title"><span class="num">75</span><span class="kicker">Skew types</span><h3>Diagnose the type of skew first</h3></div>
+  <div class="synopsis">3 cards: Data skew · Placement skew · Consumer skew</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Not all skew is the same. Data skew = one partition has more records. Placement skew = one broker hosts too many. Consumer skew = one consumer has too many partitions."</p>
+    <p>"Warning callout: different skew, different fix. Don't reach for reassignment when the answer is a better key."</p>
+  </div>
+  <div class="transition">→ Common mistakes</div>
+</article>
+
+<article class="slide-notes" id="slide-76">
+  <div class="slide-title"><span class="num">76</span><span class="kicker">Mistakes</span><h3>The greatest hits</h3></div>
+  <div class="synopsis">10-item x-list of admin mistakes</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Read the list. Ask the room quietly: 'how many of these have YOU done in the last year?'"</p>
+    <p>"Every one of these is a real production incident. This slide is the honesty check."</p>
+  </div>
+  <div class="transition">→ Section 11: Wrap-up</div>
+</article>
+
+<!-- ============================================================= SECTION 11 -->
+<h2 class="section-header" id="sec-11"><span class="n">Section 11</span>Governance &amp; Wrap-Up</h2>
+
+<article class="slide-notes" id="slide-77">
+  <div class="slide-title"><span class="num">77</span><span class="kicker">Section header</span><h3>Governance &amp; Wrap-Up</h3></div>
+  <div class="synopsis">Divider</div>
+  <div class="block say"><h4>Say</h4><p>"Homestretch. Two checklists to take home + the closer."</p></div>
+</article>
+
+<article class="slide-notes" id="slide-78">
+  <div class="slide-title"><span class="num">78</span><span class="kicker">Design review</span><h3>Approve a topic only after…</h3></div>
+  <div class="synopsis">10-item checklist for topic approval</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"This is your topic-creation review form. Every item has been covered in the deck."</p>
+    <p>"Ship this as a Google Form or JIRA template. Every new topic goes through it."</p>
+  </div>
+  <div class="transition">→ Change runbook</div>
+</article>
+
+<article class="slide-notes" id="slide-79">
+  <div class="slide-title"><span class="num">79</span><span class="kicker">Change runbook</span><h3>Every topic change follows the same 10 steps</h3></div>
+  <div class="synopsis">10-step change-management runbook (two columns)</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"For EVERY change — partition growth, config alter, reassignment — the same 10 steps."</p>
+    <p>"Screenshot both this and the previous slide. Print them. Laminate them if you want. They're your governance skeleton."</p>
+  </div>
+  <div class="transition">→ Key takeaways</div>
+</article>
+
+<article class="slide-notes" id="slide-80">
+  <div class="slide-title"><span class="num">80</span><span class="kicker">Takeaways</span><h3>What to remember</h3></div>
+  <div class="synopsis">8-item check list of the whole deck's key points</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Recap the deck in 8 bullets. Read each one — trainees will screenshot this slide."</p>
+    <p>"Last bullet is the strongest: healthy topics = healthy platform. Everything else stems from that."</p>
+  </div>
+  <div class="transition">→ Big gradient closer</div>
+</article>
+
+<article class="slide-notes" id="slide-81">
+  <div class="slide-title"><span class="num">81</span><span class="kicker">Closer</span><h3>Design once, with math. Monitor always. Change with a runbook. Never with vibes.</h3></div>
+  <div class="synopsis">Big gradient takeaway slide (no bullets)</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Read the four lines out loud, slowly. Let the last one land."</p>
+    <p>"This is the one slide people photograph."</p>
+  </div>
+  <div class="transition">→ References</div>
+</article>
+
+<article class="slide-notes" id="slide-82">
+  <div class="slide-title"><span class="num">82</span><span class="kicker">References</span><h3>Where to go next</h3></div>
+  <div class="synopsis">4 doc URLs + version-match warning</div>
+  <div class="block say"><h4>Say</h4>
+    <p>"Version-match matters. Property defaults change between Kafka releases. Bookmark the docs for YOUR version."</p>
+    <p>"Then transition to Q&amp;A: 'What did I skip? What do you want deeper?' Save 15-20 min for this."</p>
+  </div>
+  <div class="block poll"><h4>Ask the room</h4>
+    <p>"Before we open Q&amp;A: which slide made you rethink something in your current cluster?"</p>
+  </div>
+  <div class="transition">→ Q&amp;A + hands-on scenarios</div>
+</article>
+
+</main>
+</body>
+</html>
