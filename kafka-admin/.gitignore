@@ -1,0 +1,5 @@
+common/backups/
+common/data/
+common/work/
+common/*.tgz
+workshop10/security/generated/

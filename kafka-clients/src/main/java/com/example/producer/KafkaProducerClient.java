@@ -45,7 +45,7 @@ public class KafkaProducerClient {
         // Seed brokers used to discover the cluster. The client learns all brokers later.
         // Give 2-3 addresses so one unavailable bootstrap broker does not block startup.
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                "localhost:9092,localhost:9093,localhost:9094");
+                "localhost:19092,localhost:19093,localhost:19094");
 
         // One process identity, visible in client metrics, broker logs, and quota attribution.
         // Change this before attaching a per-client quota in scenario 14.

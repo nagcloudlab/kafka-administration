@@ -1,0 +1,15 @@
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+rules:
+  - pattern: 'kafka.server<type=ReplicaManager, name=(UnderReplicatedPartitions|OfflineReplicaCount|IsrShrinksPerSec|IsrExpandsPerSec)><>(Value|Count)'
+    name: kafka_server_replicamanager_$1
+    type: GAUGE
+  - pattern: 'kafka.controller<type=KafkaController, name=(ActiveControllerCount|OfflinePartitionsCount)><>Value'
+    name: kafka_controller_$1
+    type: GAUGE
+  - pattern: 'kafka.server<type=BrokerTopicMetrics, name=(MessagesInPerSec|BytesInPerSec|BytesOutPerSec)><>Count'
+    name: kafka_server_brokertopicmetrics_$1_total
+    type: COUNTER
+  - pattern: 'java.lang<type=Memory><HeapMemoryUsage>(used|max)'
+    name: jvm_memory_heap_$1_bytes
+    type: GAUGE

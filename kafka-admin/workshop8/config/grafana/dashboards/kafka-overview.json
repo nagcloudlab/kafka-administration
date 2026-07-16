@@ -1,0 +1,18 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {"type":"stat","title":"Brokers Up","id":1,"gridPos":{"h":8,"w":8,"x":0,"y":0},"targets":[{"expr":"sum(up{job=\"kafka-brokers\"})","refId":"A"}]},
+    {"type":"timeseries","title":"Under-replicated partitions","id":2,"gridPos":{"h":8,"w":8,"x":8,"y":0},"targets":[{"expr":"kafka_server_replicamanager_underreplicatedpartitions","legendFormat":"{{instance}}","refId":"A"}]},
+    {"type":"timeseries","title":"Messages in rate","id":3,"gridPos":{"h":8,"w":8,"x":16,"y":0},"targets":[{"expr":"rate(kafka_server_brokertopicmetrics_messagesinpersec_total[1m])","legendFormat":"{{instance}}","refId":"A"}]},
+    {"type":"timeseries","title":"JVM heap used","id":4,"gridPos":{"h":8,"w":12,"x":0,"y":8},"targets":[{"expr":"jvm_memory_heap_used_bytes","legendFormat":"{{instance}}","refId":"A"}]},
+    {"type":"timeseries","title":"Offline partitions","id":5,"gridPos":{"h":8,"w":12,"x":12,"y":8},"targets":[{"expr":"kafka_controller_offlinepartitionscount","legendFormat":"{{instance}}","refId":"A"}]}
+  ],
+  "schemaVersion": 41,
+  "tags": ["kafka", "training"],
+  "templating": {"list": []},
+  "time": {"from":"now-15m","to":"now"},
+  "title": "Kafka Administrator Overview",
+  "uid": "kafka-admin-overview",
+  "version": 1
+}

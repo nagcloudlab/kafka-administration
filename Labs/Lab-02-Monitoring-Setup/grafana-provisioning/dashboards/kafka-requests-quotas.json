@@ -1,0 +1,182 @@
+{
+  "id": null,
+  "uid": "kafka-requests-quotas",
+  "title": "Kafka - Requests, Latency & Quotas",
+  "tags": ["kafka", "training", "requests", "quotas"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "editable": true,
+  "graphTooltip": 1,
+  "annotations": { "list": [] },
+  "templating": { "list": [] },
+  "panels": [
+
+    {
+      "id": 1, "type": "stat", "title": "Cluster requests / s",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "sum(kafka_broker_totalproducerequestspersec) + sum(kafka_broker_totalfetchrequestspersec)",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "reqps",
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "blue" }] } } },
+      "options": { "colorMode": "value", "graphMode": "area", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 2, "type": "stat", "title": "Avg request handler idle %",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "avg(kafka_broker_request_handler_avg_idle_percent) * 100",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "value": null, "color": "red" },
+          { "value": 30, "color": "yellow" },
+          { "value": 60, "color": "green" }
+        ] } } },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 3, "type": "stat", "title": "Max request queue size",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "max(kafka_network_requestqueuesize)",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "short",
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "value": null, "color": "green" },
+          { "value": 10, "color": "yellow" },
+          { "value": 50, "color": "red" }
+        ] } } },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 4, "type": "stat", "title": "Throttled clients (max ms)  (Sc 6.2)",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "max(kafka_client_throttle_time_ms) or vector(0)",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "ms",
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [
+          { "value": null, "color": "green" },
+          { "value": 1, "color": "orange" }
+        ] } } },
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 5, "type": "timeseries", "title": "Request handler idle % per broker",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "kafka_broker_request_handler_avg_idle_percent * 100",
+        "legendFormat": "broker {{broker}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2,
+          "fillOpacity": 8 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "asc" } }
+    },
+
+    {
+      "id": 6, "type": "timeseries", "title": "Network processor idle % per broker",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "kafka_network_processor_avg_idle_percent * 100",
+        "legendFormat": "broker {{broker}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0, "max": 100,
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2,
+          "fillOpacity": 8 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "asc" } }
+    },
+
+    {
+      "id": 7, "type": "timeseries", "title": "Request queue size per broker",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "kafka_network_requestqueuesize",
+        "legendFormat": "broker {{broker}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "short",
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "stepAfter", "lineWidth": 2,
+          "fillOpacity": 10 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+
+    {
+      "id": 8, "type": "timeseries", "title": "Response queue size per broker",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "kafka_network_responsequeuesize",
+        "legendFormat": "broker {{broker}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "short",
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "stepAfter", "lineWidth": 2,
+          "fillOpacity": 10 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+
+    {
+      "id": 9, "type": "timeseries", "title": "p99 latency by request type (top 8 by current value)",
+      "gridPos": { "h": 9, "w": 12, "x": 0, "y": 20 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "topk(8, kafka_request_total_time_ms_p99{request=~\"Produce|Fetch|Metadata|JoinGroup|SyncGroup|OffsetCommit|OffsetFetch|Heartbeat|ListOffsets|ApiVersions|FindCoordinator|LeaderAndIsr|UpdateMetadata\"})",
+        "legendFormat": "{{request}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "ms",
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2,
+          "fillOpacity": 5 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true,
+          "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+
+    {
+      "id": 10, "type": "timeseries",
+      "title": "Client throttle time (Sc 6.2 — empty until a quota is applied)",
+      "gridPos": { "h": 9, "w": 12, "x": 12, "y": 20 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "kafka_client_throttle_time_ms",
+        "legendFormat": "{{client_id}} {{request}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "ms",
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2,
+          "fillOpacity": 10, "pointSize": 5 } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true,
+          "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    }
+
+  ]
+}

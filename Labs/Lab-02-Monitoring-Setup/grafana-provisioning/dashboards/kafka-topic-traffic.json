@@ -1,0 +1,142 @@
+{
+  "id": null,
+  "uid": "kafka-topic-traffic",
+  "title": "Kafka - Topic Traffic",
+  "tags": ["kafka", "training", "topics"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "editable": true,
+  "graphTooltip": 1,
+  "annotations": { "list": [] },
+  "templating": { "list": [] },
+  "panels": [
+
+    {
+      "id": 1, "type": "stat", "title": "Cluster messages/s",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(kafka_broker_messagesinpersec)",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0,
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "green" }] } } },
+      "options": { "colorMode": "value", "graphMode": "area", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 2, "type": "stat", "title": "Cluster bytes in / s",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(kafka_broker_bytesinpersec)",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "Bps",
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "blue" }] } } },
+      "options": { "colorMode": "value", "graphMode": "area", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 3, "type": "stat", "title": "Cluster bytes out / s",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A", "expr": "sum(kafka_broker_bytesoutpersec)",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "Bps",
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "purple" }] } } },
+      "options": { "colorMode": "value", "graphMode": "area", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 4, "type": "stat", "title": "Total requests / s",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "sum(kafka_broker_totalproducerequestspersec) + sum(kafka_broker_totalfetchrequestspersec)",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "reqps",
+        "color": { "mode": "thresholds" },
+        "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "orange" }] } } },
+      "options": { "colorMode": "value", "graphMode": "area", "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } }
+    },
+
+    {
+      "id": 5, "type": "timeseries", "title": "Bytes in / s per topic (stacked)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "sum by (topic) (kafka_topic_bytesinpersec{topic!~\"__.*\"})",
+        "legendFormat": "{{topic}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "Bps",
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 1,
+          "fillOpacity": 40, "stacking": { "mode": "normal", "group": "A" } } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true,
+          "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+
+    {
+      "id": 6, "type": "timeseries", "title": "Bytes out / s per topic (stacked)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "sum by (topic) (kafka_topic_bytesoutpersec{topic!~\"__.*\"})",
+        "legendFormat": "{{topic}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "Bps",
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 1,
+          "fillOpacity": 40, "stacking": { "mode": "normal", "group": "A" } } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true,
+          "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+
+    {
+      "id": 7, "type": "timeseries", "title": "Messages / s per topic (stacked)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "refId": "A",
+        "expr": "sum by (topic) (kafka_topic_messagesinpersec{topic!~\"__.*\"})",
+        "legendFormat": "{{topic}}",
+        "datasource": { "type": "prometheus", "uid": "prometheus" } }],
+      "fieldConfig": { "defaults": { "unit": "short",
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 1,
+          "fillOpacity": 40, "stacking": { "mode": "normal", "group": "A" } } } },
+      "options": { "legend": { "displayMode": "table", "placement": "right", "showLegend": true,
+          "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    },
+
+    {
+      "id": 8, "type": "timeseries", "title": "Requests / s per broker (produce + fetch)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "kafka_broker_totalproducerequestspersec",
+          "legendFormat": "produce - broker {{broker}}",
+          "datasource": { "type": "prometheus", "uid": "prometheus" } },
+        { "refId": "B", "expr": "kafka_broker_totalfetchrequestspersec",
+          "legendFormat": "fetch - broker {{broker}}",
+          "datasource": { "type": "prometheus", "uid": "prometheus" } }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps",
+        "color": { "mode": "palette-classic" },
+        "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2,
+          "fillOpacity": 10, "pointSize": 4 } } },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" } }
+    }
+
+  ]
+}

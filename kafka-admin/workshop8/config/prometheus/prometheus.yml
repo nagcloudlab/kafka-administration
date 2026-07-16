@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+rule_files:
+  - alerts.yml
+scrape_configs:
+  - job_name: kafka-brokers
+    static_configs:
+      - targets: ['127.0.0.1:17071', '127.0.0.1:17072', '127.0.0.1:17073']
+        labels:
+          cluster: training

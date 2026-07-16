@@ -1,0 +1,15 @@
+# Grafana dashboard provider — loads any JSON files in this dir at startup.
+
+apiVersion: 1
+
+providers:
+  - name: 'Kafka Admin Training'
+    orgId: 1
+    folder: ''
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: false

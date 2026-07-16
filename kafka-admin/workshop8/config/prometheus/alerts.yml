@@ -1,0 +1,21 @@
+groups:
+  - name: kafka-training
+    rules:
+      - alert: KafkaBrokerDown
+        expr: up{job="kafka-brokers"} == 0
+        for: 15s
+        labels: {severity: critical}
+        annotations:
+          summary: 'Kafka broker exporter {{ $labels.instance }} is down'
+      - alert: KafkaUnderReplicatedPartitions
+        expr: kafka_server_replicamanager_underreplicatedpartitions > 0
+        for: 15s
+        labels: {severity: warning}
+        annotations:
+          summary: 'Broker {{ $labels.instance }} has under-replicated partitions'
+      - alert: KafkaOfflinePartitions
+        expr: kafka_controller_offlinepartitionscount > 0
+        for: 5s
+        labels: {severity: critical}
+        annotations:
+          summary: 'Kafka has offline partitions'
